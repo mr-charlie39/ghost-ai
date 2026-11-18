@@ -1,69 +1,129 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { Sparkles, Terminal, Layers } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="container mx-auto max-w-4xl p-8 space-y-8">
+      <div className="space-y-2">
+        <h1 className={cn("text-3xl font-bold tracking-tight text-copy-primary", "flex items-center gap-2")}>
+          <Layers className="h-8 w-8 text-brand" />
+          Ghost AI Design System
+        </h1>
+        <p className="text-copy-muted">
+          Technical workspace primitives and dark theme design tokens.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card Component */}
+        <Card className="border-border bg-surface">
+          <CardHeader>
+            <CardTitle className="text-copy-primary flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-brand" />
+              Components
+            </CardTitle>
+            <CardDescription className="text-copy-muted">
+              Interactive primitives configured for the dark workspace.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="default">Primary Button</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="outline">Outline</Button>
+            </div>
+
+            <div className="space-y-2">
+              <Input placeholder="System design prompt..." />
+              <Textarea placeholder="Architecture specifications..." />
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Dialog>
+              <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                Open Dialog
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-copy-primary">System Architecture</DialogTitle>
+                  <DialogDescription className="text-copy-muted">
+                    Collaborate and refine system designs in real-time.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-2 text-sm text-copy-secondary">
+                  Dialog overlay and popup rendered with dark surface tokens.
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardFooter>
+        </Card>
+
+        {/* Tabs and ScrollArea Component */}
+        <Card className="border-border bg-surface">
+          <CardHeader>
+            <CardTitle className="text-copy-primary flex items-center gap-2">
+              <Terminal className="h-4 w-4 text-ai" />
+              Tabs & Scroll Area
+            </CardTitle>
+            <CardDescription className="text-copy-muted">
+              Multi-tab content with scrollable area.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="tokens" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tokens">Tokens</TabsTrigger>
+                <TabsTrigger value="scroll">Scroll</TabsTrigger>
+              </TabsList>
+              <TabsContent value="tokens" className="space-y-2 pt-2">
+                <div className="text-xs font-mono space-y-1">
+                  <div className="p-2 rounded-xl bg-base border border-surface-border text-copy-primary">
+                    bg-base: #080809
+                  </div>
+                  <div className="p-2 rounded-xl bg-surface border border-surface-border text-brand">
+                    brand-accent: #00c8d4
+                  </div>
+                  <div className="p-2 rounded-xl bg-elevated border border-surface-border text-ai">
+                    ai-accent: #6457f9
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="scroll" className="pt-2">
+                <ScrollArea className="h-28 w-full rounded-xl border border-border p-3">
+                  <div className="space-y-2 text-xs text-copy-secondary">
+                    <p>Microservices starter architecture loaded.</p>
+                    <p>Event-driven gateway connected to Kafka cluster.</p>
+                    <p>PostgreSQL replica pool initialized.</p>
+                    <p>Redis caching layer configured.</p>
+                    <p>Spec generator ready.</p>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 }
