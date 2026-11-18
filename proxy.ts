@@ -4,22 +4,43 @@ import { NextResponse } from "next/server";
 const signInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 const signUpUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || "/sign-up";
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-  const { pathname } = req.nextUrl;
-
-  // Redirect root path: authenticated to /editor, unauthenticated to /sign-in
-  if (pathname === "/") {
-    const destination = userId ? "/editor" : signInUrl;
-    return NextResponse.redirect(new URL(destination, req.url));
+function toPathname(url: string) {
+  try {
+    return new URL(url, "http://n").pathname;
+  } catch {
+    return url;
   }
+}
 
-  // Protect all other routes by default
-  const isPublic = pathname.startsWith(signInUrl) || pathname.startsWith(signUpUrl);
-  if (!isPublic) {
-    await auth.protect();
-  }
-});
+function matchesRoute(pathname: string, target: string) {
+  const targetPath = toPathname(target);
+  return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
+}
+
+export default clerkMiddleware(
+  async (auth, req) => {
+    const { userId } = await auth();
+    const { pathname } = req.nextUrl;
+
+    // Redirect root path: authenticated to /editor, unauthenticated to /sign-in
+    if (pathname === "/") {
+      const destination = userId ? "/editor" : signInUrl;
+      return NextResponse.redirect(new URL(destination, req.url));
+    }
+
+    // Protect all other routes by default
+    const isPublic =
+      matchesRoute(pathname, signInUrl) ||
+      matchesRoute(pathname, signUpUrl) ||
+      matchesRoute(pathname, "/sign-in") ||
+      matchesRoute(pathname, "/sign-up");
+
+    if (!isPublic) {
+      await auth.protect();
+    }
+  },
+  { signInUrl, signUpUrl }
+);
 
 export const config = {
   matcher: [

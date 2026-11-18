@@ -56,7 +56,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - Configured Tailwind v4 with PostCSS plugin (`@tailwindcss/postcss`) and `@theme inline` mapping in `globals.css` for dark-only theme tokens (`--bg-base`, `--bg-surface`, `--text-copy-primary`, etc.) as defined in `ui-context.md`.
 - Bound shadcn semantic variables (`--background`, `--foreground`, `--card`, `--primary`, `--border`, etc.) directly to dark theme tokens in both `:root` and `.dark`.
 - Followed Next.js 16 file convention by placing `proxy.ts` at the root with `clerkMiddleware`, exporting default handler and registering matcher without calling deprecated `createRouteMatcher`.
-- Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`) to support Next.js 16 Partial Prefetching / Cache Components with runtime auth headers.
+- Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`) to opt them out of instant-navigation validation when accessing runtime auth data during prerendering. Partial Prefetching (PPR) is configured separately via the `partialPrefetching` config flag and `prefetch` route segment exports.
 - Enforced resource-based auth protection directly in server components (`/` and `/editor`) alongside proxy route protection.
 
 ## Session Notes
