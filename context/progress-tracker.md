@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Next feature unit (e.g. Authentication, Canvas setup, or Project management).
+- Next feature unit (Canvas setup, Liveblocks room integration, or Project management).
 
 ## Completed
 
@@ -27,6 +27,17 @@ Update this file whenever the current phase, active feature, or implementation s
   - Created `components/editor/editor-layout.tsx` composing the full-viewport editor workspace (fixed `EditorNavbar`, floating `ProjectSidebar`, and central canvas area).
   - Replaced the Feature 01 mockup layout in `app/page.tsx` with the real `EditorLayout` component.
   - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+- **Feature 03: Authentication** (`context/feature-specs/03-auth.md`)
+  - Installed `@clerk/ui` dependency and imported `dark` theme from `@clerk/ui/themes`.
+  - Wrapped root layout (`app/layout.tsx`) with `ClerkProvider` using Clerk's `dark` base theme and mapped appearance variables directly to existing CSS custom properties with no hardcoded colors.
+  - Added `suppressHydrationWarning` on `<html>` and `<body>` in `app/layout.tsx` to eliminate hydration mismatch warnings from browser extension attributes (`data-gr-ext-installed`, etc.).
+  - Implemented Next.js 16 `proxy.ts` at the project root using `clerkMiddleware`, redirecting `/` and protecting all non-public routes by default using direct path prefix checks without deprecated `createRouteMatcher`.
+  - Configured `/` (`app/page.tsx`) and `/editor` (`app/editor/page.tsx`) with server-side resource-based auth checks redirecting unauthenticated users to `/sign-in`.
+  - Created `/editor` route (`app/editor/page.tsx`) rendering `EditorLayout`.
+  - Implemented minimal two-panel `AuthLayout` (`components/auth/auth-layout.tsx`) with compact logo, tagline, text-only feature list on large screens, form-only on small screens, no gradients or oversized cards, and CSS variables only.
+  - Created sign-in (`app/sign-in/[[...sign-in]]/page.tsx`) and sign-up (`app/sign-up/[[...sign-up]]/page.tsx`) pages using Clerk's `<SignIn />` and `<SignUp />`.
+  - Integrated Clerk's built-in `<UserButton />` into `EditorNavbar` right section (`components/editor/editor-navbar.tsx`).
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
 
 ## In Progress
 
@@ -34,7 +45,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Feature 03 / Next editor and canvas foundation units.
+- Canvas setup and real-time collaboration foundations.
 
 ## Open Questions
 
@@ -44,7 +55,10 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Configured Tailwind v4 with PostCSS plugin (`@tailwindcss/postcss`) and `@theme inline` mapping in `globals.css` for dark-only theme tokens (`--bg-base`, `--bg-surface`, `--text-copy-primary`, etc.) as defined in `ui-context.md`.
 - Bound shadcn semantic variables (`--background`, `--foreground`, `--card`, `--primary`, `--border`, etc.) directly to dark theme tokens in both `:root` and `.dark`.
+- Followed Next.js 16 file convention by placing `proxy.ts` at the root with `clerkMiddleware`, exporting default handler and registering matcher without calling deprecated `createRouteMatcher`.
+- Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`) to support Next.js 16 Partial Prefetching / Cache Components with runtime auth headers.
+- Enforced resource-based auth protection directly in server components (`/` and `/editor`) alongside proxy route protection.
 
 ## Session Notes
 
-- Feature 01 completed and verified end-to-end.
+- Feature 01, Feature 02, and Feature 03 completed and verified end-to-end.
