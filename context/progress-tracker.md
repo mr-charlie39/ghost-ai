@@ -41,7 +41,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## In Progress
 
-- None.
+- **Feature 04: Project Dialogs & Editor Home** (`context/feature-specs/04-project-dialogs.md`)
+  - Building the `/editor` home screen with minimal layout (heading, description, New Project button).
+  - Creating dedicated hook for dialog, form, and loading state.
+  - Implementing Create Project dialog with live slug preview.
+  - Implementing Rename Project dialog with prefilled name, auto-focus, and Enter submission.
+  - Implementing Delete Project dialog with destructive confirmation.
+  - Updating ProjectSidebar with mock project items (owned and shared), actions menu (rename, delete) shown only for owned projects, and mobile backdrop scrim.
+  - Wiring editor home and sidebar actions to the dialogs.
+  - Removed closed-sidebar controls from keyboard navigation and preserved ordinary rename submission while ignoring Enter during IME composition.
 
 ## Next Up
 
