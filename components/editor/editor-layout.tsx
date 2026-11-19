@@ -3,6 +3,9 @@
 import * as React from "react";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
+import { EditorHome } from "@/components/editor/editor-home";
+import { ProjectDialogs } from "@/components/editor/project-dialogs";
+import { useProjectDialogs } from "@/hooks/use-project-dialogs";
 import { cn } from "@/lib/utils";
 
 export interface EditorLayoutProps {
@@ -19,6 +22,7 @@ export function EditorLayout({
   className,
 }: EditorLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const projectDialogs = useProjectDialogs();
 
   return (
     <div
@@ -39,27 +43,41 @@ export function EditorLayout({
       <ProjectSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onNewProject={projectDialogs.openCreateDialog}
+        ownedProjects={projectDialogs.ownedProjects}
+        sharedProjects={projectDialogs.sharedProjects}
+        onRenameProject={projectDialogs.openRenameDialog}
+        onDeleteProject={projectDialogs.openDeleteDialog}
       />
 
-      {/* Main Canvas Workspace */}
+      {/* Main Canvas Workspace / Editor Home */}
       <main className="relative flex flex-1 overflow-hidden bg-base">
         {children ? (
           children
         ) : (
-          <div className="relative flex h-full w-full items-center justify-center">
-            {/* Subtle workspace canvas dot-grid */}
-            <div className="absolute inset-0 bg-[radial-gradient(#2a2a30_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
-            <div className="z-10 flex flex-col items-center justify-center text-center p-6 select-none">
-              <p className="text-sm font-medium text-copy-muted">
-                System Design Canvas
-              </p>
-              <p className="text-xs text-copy-faint mt-1 max-w-sm">
-                Open the project sidebar to view existing architectures or create a new project.
-              </p>
-            </div>
-          </div>
+          <EditorHome onNewProject={projectDialogs.openCreateDialog} />
         )}
       </main>
+
+      {/* Project Dialogs (Create, Rename, Delete) */}
+      <ProjectDialogs
+        isCreateOpen={projectDialogs.isCreateOpen}
+        onCloseCreate={projectDialogs.closeCreateDialog}
+        createName={projectDialogs.createName}
+        onChangeCreateName={projectDialogs.setCreateName}
+        slugPreview={projectDialogs.slugPreview}
+        onSubmitCreate={projectDialogs.handleCreateProject}
+        isRenameOpen={projectDialogs.isRenameOpen}
+        onCloseRename={projectDialogs.closeRenameDialog}
+        renameName={projectDialogs.renameName}
+        onChangeRenameName={projectDialogs.setRenameName}
+        targetProject={projectDialogs.selectedProject}
+        onSubmitRename={projectDialogs.handleRenameProject}
+        isDeleteOpen={projectDialogs.isDeleteOpen}
+        onCloseDelete={projectDialogs.closeDeleteDialog}
+        onSubmitDelete={projectDialogs.handleDeleteProject}
+        isLoading={projectDialogs.isLoading}
+      />
     </div>
   );
 }
