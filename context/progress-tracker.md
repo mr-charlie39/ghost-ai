@@ -45,22 +45,47 @@ Update this file whenever the current phase, active feature, or implementation s
   - Created `lib/prisma.ts` cached singleton client branching on `DATABASE_URL` (using Prisma Accelerate when starting with `prisma+postgres://`, otherwise direct `@prisma/adapter-pg` driver adapter), cached on `global` in development for hot reloads.
   - Successfully generated and applied the initial migration `20261119161138_init` to PostgreSQL and generated Prisma Client to `app/generated/prisma`.
   - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+- **Feature 06: Backend Project API Routes** (`context/feature-specs/06-project-apis.md`)
+  - Created REST API routes for project management:
+    - `GET /api/projects`: lists current authenticated user's projects (using Clerk `ownerId`) ordered by `createdAt` descending.
+    - `POST /api/projects`: creates new project with Clerk `userId` as `ownerId`, defaulting missing or empty name to `Untitled Project`, utilizing Prisma's cuid ID strategy.
+    - `PATCH /api/projects/[projectId]`: renames project, validating input and enforcing strict ownership checks (`403` Forbidden if non-owner, `404` if not found).
+    - `DELETE /api/projects/[projectId]`: deletes project with strict ownership checks (`403` Forbidden if non-owner, `404` if not found).
+  - Configured `proxy.ts` middleware to ensure unauthenticated requests to `/api/*` return JSON `401 Unauthorized` instead of redirecting to `/sign-in`.
+  - Maintained backend-only scope without wiring UI components prematurely.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+
+- **Feature 04: Project Dialogs & Editor Home** (`context/feature-specs/04-project-dialogs.md`)
+  - Built `/editor` home screen with minimal layout (`Create a project or open an existing one` heading, description, and `New Project` button).
+  - Created `components/editor/project-dialogs.tsx` establishing Create, Rename, and Delete dialogs adhering to dark workspace tokens (`bg-surface`, `border-surface-border`, `text-copy-primary`, `rounded-3xl` modal radius).
+  - Added project item actions menu (rename, delete) visible only for owned projects and hidden for shared projects.
+  - Implemented mobile backdrop scrim on `ProjectSidebar` and removed closed-sidebar controls from keyboard navigation (`aria-hidden` and `inert`).
+  - Preserved ordinary rename submission while ignoring Enter during IME composition.
+- **Feature 07: Wire Editor Home & Project APIs** (`context/feature-specs/07-wire-editor-home.md`)
+  - Created server-side data helper in `lib/projects.ts` (`getUserProjects`, `getOwnedProjects`, `getSharedProjects`, `getProjectById`) fetching owned projects by Clerk `userId` and shared projects by user email addresses via Prisma.
+  - Updated `/editor` home page server component (`app/editor/page.tsx`) to fetch owned and shared projects server-side and pass both lists down to `EditorLayout` and `ProjectSidebar` with no client-side fetching for initial load.
+  - Created workspace route server component in `app/editor/[projectId]/page.tsx` verifying project existence, providing `activeProjectId`, and displaying project name in navbar.
+  - Extended `lib/slug.ts` with `generateShortSuffix` and `generateRoomId` to align project ID and Liveblocks room ID.
+  - Updated `POST /api/projects` in `app/api/projects/route.ts` to accept pre-generated room ID, keeping the database primary key and Liveblocks room ID aligned.
+  - Created `hooks/use-project-actions.ts` (`useProjectActions`) managing:
+    - Create dialog state, project name input, short random suffix generation, live room ID preview, calling `POST /api/projects`, and navigating to the new workspace (`/editor/[projectId]`).
+    - Rename dialog state, prefilling current project name, calling `PATCH /api/projects/[id]`, and calling `router.refresh()`.
+    - Delete dialog state, showing target project name, calling `DELETE /api/projects/[id]`, redirecting to `/editor` if deleting the active workspace, or calling `router.refresh()`.
+  - Wired `useProjectActions` to `EditorLayout`, `ProjectSidebar`, and `ProjectDialogs`:
+    - Create dialog displays live "Room ID Preview".
+    - Rename dialog pre-fills current project name.
+    - Delete dialog displays project name and destructive confirmation.
+    - Project items in `ProjectSidebar` navigate to `/editor/[projectId]` on click.
+  - Resolved Turbopack build optimization for Tailwind CSS v4 in `next.config.ts` via `@tailwindcss/turbopack` loader rules.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
 
 ## In Progress
 
-- **Feature 04: Project Dialogs & Editor Home** (`context/feature-specs/04-project-dialogs.md`)
-  - Building the `/editor` home screen with minimal layout (heading, description, New Project button).
-  - Creating dedicated hook for dialog, form, and loading state.
-  - Implementing Create Project dialog with live slug preview.
-  - Implementing Rename Project dialog with prefilled name, auto-focus, and Enter submission.
-  - Implementing Delete Project dialog with destructive confirmation.
-  - Updating ProjectSidebar with mock project items (owned and shared), actions menu (rename, delete) shown only for owned projects, and mobile backdrop scrim.
-  - Wiring editor home and sidebar actions to the dialogs.
-  - Removed closed-sidebar controls from keyboard navigation and preserved ordinary rename submission while ignoring Enter during IME composition.
+- Next feature unit preparation.
 
 ## Next Up
 
-- Canvas setup and real-time collaboration foundations.
+- Canvas setup and real-time collaboration foundations (Feature 08).
 
 ## Open Questions
 
@@ -75,7 +100,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Enforced resource-based auth protection directly in server components (`/` and `/editor`) alongside proxy route protection.
 - Configured Prisma 7 with schema folder support in `prisma7.config.ts`, generating type-safe Prisma Client to `app/generated/prisma`.
 - Implemented singleton pattern in `lib/prisma.ts` with connection branching between Prisma Accelerate (`prisma+postgres://`) and direct PostgreSQL connection via `@prisma/adapter-pg`.
+- Configured REST endpoints in `app/api/projects/` handling list, create, rename, and delete with defense-in-depth security: middleware-level 401 response for unauthenticated `/api/*` requests and handler-level ownership validation (403 Forbidden for non-owner mutations).
 
 ## Session Notes
 
-- Feature 01, Feature 02, Feature 03, and Feature 05 completed and verified end-to-end.
+- Feature 01, Feature 02, Feature 03, Feature 04, Feature 05, Feature 06, and Feature 07 completed and verified end-to-end.

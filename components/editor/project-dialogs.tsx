@@ -15,7 +15,8 @@ export interface CreateProjectDialogProps {
   onOpenChange: (open: boolean) => void;
   projectName: string;
   onChangeName: (name: string) => void;
-  slugPreview: string;
+  slugPreview?: string;
+  roomIdPreview?: string;
   onSubmit: (e?: React.FormEvent) => void;
   isLoading?: boolean;
 }
@@ -26,9 +27,12 @@ export function CreateProjectDialog({
   projectName,
   onChangeName,
   slugPreview,
+  roomIdPreview,
   onSubmit,
   isLoading = false,
 }: CreateProjectDialogProps) {
+  const displayPreview = roomIdPreview || slugPreview || "untitled-project";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectName.trim() || isLoading) return;
@@ -83,10 +87,10 @@ export function CreateProjectDialog({
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium text-copy-muted">Slug Preview</span>
+          <span className="text-xs font-medium text-copy-muted">Room ID Preview</span>
           <div className="flex items-center gap-2 rounded-xl border border-surface-border bg-base px-3 py-2 text-xs">
             <span className="font-mono text-brand font-medium">
-              {slugPreview ? slugPreview : "project-slug"}
+              {displayPreview}
             </span>
           </div>
         </div>
@@ -267,7 +271,8 @@ export interface ProjectDialogsProps {
   onCloseCreate: () => void;
   createName: string;
   onChangeCreateName: (name: string) => void;
-  slugPreview: string;
+  slugPreview?: string;
+  roomIdPreview?: string;
   onSubmitCreate: (e?: React.FormEvent) => void;
 
   isRenameOpen: boolean;
@@ -290,6 +295,7 @@ export function ProjectDialogs({
   createName,
   onChangeCreateName,
   slugPreview,
+  roomIdPreview,
   onSubmitCreate,
 
   isRenameOpen,
@@ -313,6 +319,7 @@ export function ProjectDialogs({
         projectName={createName}
         onChangeName={onChangeCreateName}
         slugPreview={slugPreview}
+        roomIdPreview={roomIdPreview}
         onSubmit={onSubmitCreate}
         isLoading={isLoading}
       />

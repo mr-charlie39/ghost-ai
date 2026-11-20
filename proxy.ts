@@ -36,6 +36,12 @@ export default clerkMiddleware(
       matchesRoute(pathname, "/sign-up");
 
     if (!isPublic) {
+      if (pathname.startsWith("/api/")) {
+        if (!userId) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        return;
+      }
       await auth.protect();
     }
   },
