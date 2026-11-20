@@ -38,6 +38,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - Created sign-in (`app/sign-in/[[...sign-in]]/page.tsx`) and sign-up (`app/sign-up/[[...sign-up]]/page.tsx`) pages using Clerk's `<SignIn />` and `<SignUp />`.
   - Integrated Clerk's built-in `<UserButton />` into `EditorNavbar` right section (`components/editor/editor-navbar.tsx`).
   - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+- **Feature 05: Prisma Schema & Data Layer** (`context/feature-specs/05-prisma (1).md`)
+  - Configured Prisma 7 schema configuration with multi-file schema folder in `prisma7.config.ts`.
+  - Created `prisma/models/project.prisma` containing `ProjectStatus` enum (`DRAFT`, `ARCHIVED`), `Project` model with Clerk `ownerId` mapping, `name`, optional `description`, `status`, `canvasJsonPath` for future blob storage, timestamps (`createdAt`, `updatedAt`), and indexes on `ownerId` and `createdAt`.
+  - Created `ProjectCollaborator` model with relation to `Project` featuring cascade delete (`onDelete: Cascade`), collaborator `email`, `createdAt` timestamp, unique constraint on `[projectId, email]`, and indexes on `email` and `[projectId, createdAt]`.
+  - Created `lib/prisma.ts` cached singleton client branching on `DATABASE_URL` (using Prisma Accelerate when starting with `prisma+postgres://`, otherwise direct `@prisma/adapter-pg` driver adapter), cached on `global` in development for hot reloads.
+  - Successfully generated and applied the initial migration `20261119161138_init` to PostgreSQL and generated Prisma Client to `app/generated/prisma`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
 
 ## In Progress
 
@@ -66,7 +73,9 @@ Update this file whenever the current phase, active feature, or implementation s
 - Followed Next.js 16 file convention by placing `proxy.ts` at the root with `clerkMiddleware`, exporting default handler and registering matcher without calling deprecated `createRouteMatcher`.
 - Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`) to opt them out of instant-navigation validation when accessing runtime auth data during prerendering. Partial Prefetching (PPR) is configured separately via the `partialPrefetching` config flag and `prefetch` route segment exports.
 - Enforced resource-based auth protection directly in server components (`/` and `/editor`) alongside proxy route protection.
+- Configured Prisma 7 with schema folder support in `prisma7.config.ts`, generating type-safe Prisma Client to `app/generated/prisma`.
+- Implemented singleton pattern in `lib/prisma.ts` with connection branching between Prisma Accelerate (`prisma+postgres://`) and direct PostgreSQL connection via `@prisma/adapter-pg`.
 
 ## Session Notes
 
-- Feature 01, Feature 02, and Feature 03 completed and verified end-to-end.
+- Feature 01, Feature 02, Feature 03, and Feature 05 completed and verified end-to-end.
