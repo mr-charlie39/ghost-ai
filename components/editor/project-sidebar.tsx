@@ -14,6 +14,7 @@ export interface ProjectSidebarProps {
   onNewProject?: () => void;
   ownedProjects?: ProjectItem[];
   sharedProjects?: ProjectItem[];
+  onSelectProject?: (project: ProjectItem) => void;
   onRenameProject?: (project: ProjectItem) => void;
   onDeleteProject?: (project: ProjectItem) => void;
   className?: string;
@@ -25,6 +26,7 @@ export function ProjectSidebar({
   onNewProject,
   ownedProjects = [],
   sharedProjects = [],
+  onSelectProject,
   onRenameProject,
   onDeleteProject,
   className,
@@ -95,7 +97,8 @@ export function ProjectSidebar({
                   {ownedProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="group flex items-center justify-between gap-2 rounded-xl p-2.5 transition-colors hover:bg-subtle/80 border border-transparent hover:border-surface-border select-none"
+                      onClick={() => onSelectProject?.(project)}
+                      className="group flex items-center justify-between gap-2 rounded-xl p-2.5 transition-colors hover:bg-subtle/80 border border-transparent hover:border-surface-border select-none cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-base border border-surface-border text-copy-muted group-hover:text-brand">
@@ -168,7 +171,8 @@ export function ProjectSidebar({
                   {sharedProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="group flex items-center justify-between gap-2 rounded-xl p-2.5 transition-colors hover:bg-subtle/80 border border-transparent hover:border-surface-border select-none"
+                      onClick={() => onSelectProject?.(project)}
+                      className="group flex items-center justify-between gap-2 rounded-xl p-2.5 transition-colors hover:bg-subtle/80 border border-transparent hover:border-surface-border select-none cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-base border border-surface-border text-copy-muted group-hover:text-brand">
