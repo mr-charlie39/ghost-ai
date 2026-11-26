@@ -1,20 +1,16 @@
 import { Suspense } from "react";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { EditorLayout } from "@/components/editor";
 import { getUserProjects } from "@/lib/projects";
+import { getCurrentIdentity } from "@/lib/project-access";
 
 export const instant = false;
 
 export default async function EditorPage() {
-  const { userId } = await auth();
+  const { userId, emails } = await getCurrentIdentity();
   if (!userId) {
     redirect(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in");
   }
-
-  const user = await currentUser();
-  const emails =
-    user?.emailAddresses?.map((e) => e.emailAddress.toLowerCase()) ?? [];
 
   const { ownedProjects, sharedProjects } = await getUserProjects(
     userId,

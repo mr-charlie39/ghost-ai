@@ -48,8 +48,9 @@ the cutover observable and reversible.
 9. **Staged read-only soak:** run the Prisma 8 stack read-only against staging/production data
    alongside v6 and compare outputs before allowing writes.
 10. **Cutover + rollback:** switch writes to Prisma 8 only after the soak; keep the v6 branch
-    deployable as the rollback path. Rolling back is a code rollback — the data was never
-    moved.
+    deployable as the rollback path. Throughout the rollback window, validators must accept
+    v6 writes, or have a tested procedure to roll back validators before restoring v6. Rolling
+    back is a code rollback — the data was never moved.
 
 After cutover, follow the synced `prisma-8` skill for ongoing work (see the hand-off rule
 in `SKILL.md`).

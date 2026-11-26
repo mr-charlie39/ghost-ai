@@ -124,7 +124,8 @@ const result = await prisma.user.createMany({
 
 ### createManyAndReturn
 
-Create multiple and return them:
+Create multiple and return them. Returns are supported by PostgreSQL, CockroachDB, and
+SQLite, but not MySQL:
 
 ```typescript
 const users = await prisma.user.createManyAndReturn({
@@ -177,6 +178,8 @@ const result = await prisma.user.updateMany({
 ```
 
 ### updateManyAndReturn
+
+Returns are supported by PostgreSQL, CockroachDB, and SQLite, but not MySQL.
 
 ```typescript
 const users = await prisma.user.updateManyAndReturn({

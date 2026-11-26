@@ -51,9 +51,10 @@ prisma migrate reset --schema=./custom/schema.prisma
 
 ## When to Use
 
-- **Development**: When you want a fresh start
-- **Testing**: Resetting test database before suites
-- **Drift Recovery**: When the database is out of sync and you can't migrate
+- **Disposable development databases**: When you want a fresh start
+- **Testing**: Resetting a disposable test database before suites
+- Do not reset production to recover drift. Reconcile production state with migrations
+  using a reviewed, non-reset recovery procedure.
 
 ## Follow-up Steps
 

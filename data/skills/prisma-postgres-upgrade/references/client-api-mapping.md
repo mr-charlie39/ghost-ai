@@ -44,14 +44,20 @@ Queries start at `db.orm.public.<Model>`. For anything not listed here, follow t
 | `findUnique` on an `@unique` or `@@unique` field | `.where({...}).first()` |
 | `create({ data: { ..., votes: { create: {...} } } })` | `.create({ ..., votes: (v) => v.create([{...}]) })` |
 | `deleteMany({ where })` then `.count` | `.where({...}).deleteAndCount()` |
-| `deleteMany()` with no filter (seeds, tests) | `.where((m) => m.id.isNotNull()).deleteAll()`: writes need a filter |
-| `createMany({ data: [...] })` | `.createAll([...])` |
+| `deleteMany()` with no filter (seeds, tests) | `.where((m) => m.email.isNotNull()).deleteAll()` for a model with a required `email`; choose an existing required field per model rather than assuming it has an `id` |
+| `createMany({ data: [...] })` | `.createAll([...])` returns created rows, not Prisma 6's `{ count }`; use `.createAndCount([...])` when the caller needs only the inserted count |
 | `count({ where })` | `.where({...}).aggregate((a) => ({ total: a.count() }))` |
 | `Object.values(PostStatus)` from `@prisma/client` | `db.nativeEnums.public.PostStatus.values` |
 | ``$queryRaw`SELECT 1` `` (health checks) | ``db.execute(db.raw.sql`SELECT 1`.affectedCount().build())`` |
 
 What has no Prisma 8 form yet, such as `increment` in an update, is listed in
 [Coming from Prisma ORM 7](https://www.prisma.io/docs/orm/coming-from-prisma-orm-7#queries).
+
+`createAndCount` resolves to the inserted count:
+
+```typescript
+const insertedCount = await db.orm.public.Post.createAndCount([{ title: "First post" }])
+```
 
 ## The five differences
 

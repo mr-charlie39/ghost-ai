@@ -35,8 +35,8 @@ A Prisma 6 or 7 `prisma` binary has no `auth`, `project`, `service`, `branch`, `
 | `service` | `list`, `create <name> [--region] [--branch]`, `show <service>`, `open <service>`, `logs <service>`, `delete <service>` | `--project`, `--branch` on each |
 | `service version` | `list <service>`, `show <id>`, `promote <id>`, `rollback <service> [--to <id>]`, `start <id>`, `stop <id>`, `delete <id>` | Version ids look like `cpv_...` |
 | `service domain` | `add`, `show`, `wait [--timeout]`, `retry`, `delete`, each `<hostname> --service <service>` | Production branch only |
-| `deploy <entry>` | `--name`, `--stage`, `--report <path>`, `--build-id <id>` | Composer app; does not build |
-| `dev <entry>` | `--name`, `--fresh` | Composer app, local, no credentials |
+| `deploy` | `--name`, `--environment`, `--report <path>`, `--build-id <id>` | Composer app; entry is configured in `prisma.config.ts`; does not build |
+| `dev` | `--name`, `--fresh` | Composer app, entry is configured in `prisma.config.ts`; local, no credentials |
 | `init` | `--skills <agents>`, `--postinstall/--no-postinstall` | Local only; never edits an existing `prisma.config.ts` |
 | `skills` | `sync [--disable\|--enable]`, `list` | Copies package-shipped skills |
 | `feedback <message>` | `--email <address>` | Anonymous unless `--email` |
@@ -126,7 +126,12 @@ npx prisma service delete api --yes
 
 ```bash
 npm run build
-npx prisma deploy module.ts --stage feat-search --json
+npx prisma deploy --environment feat-search --json
+```
+
+Delete a service only when explicitly requested; it is a separate destructive operation:
+
+```bash
 npx prisma service delete api --branch feat-search --confirm api --json
 ```
 

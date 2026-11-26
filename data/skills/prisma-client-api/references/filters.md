@@ -74,9 +74,12 @@ where: { deletedAt: null }
 // Is not null
 where: { deletedAt: { not: null } }
 
-// Using isSet (for optional fields)
+// MongoDB only: match documents where the optional field exists
 where: { middleName: { isSet: true } }
 ```
+
+For SQL databases, use `not: null` when filtering for a non-null optional field, as shown
+above.
 
 ## Logical Operators
 
@@ -201,7 +204,7 @@ where: {
 // Users without profile
 where: {
   profile: {
-    isNot: null
+    is: null
   }
 }
 ```
@@ -227,7 +230,7 @@ where: { tags: { isEmpty: true } }
 ## JSON Filters
 
 ```typescript
-// Path-based filter
+// PostgreSQL: path is an array of path segments
 where: {
   metadata: {
     path: ['settings', 'theme'],
@@ -244,13 +247,40 @@ where: {
 }
 ```
 
-## Full-Text Search
+For MySQL, use a string JSON path instead:
 
 ```typescript
-// Requires @@fulltext index
 where: {
-  content: {
-    search: 'prisma database'
+  metadata: {
+    path: '$.settings.theme',
+    equals: 'dark'
   }
 }
 ```
+
+## Full-Text Search
+
+For PostgreSQL, enable the preview feature in the generator and regenerate Prisma Client:
+
+```prisma
+generator client {
+  provider        = "prisma-client"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+```
+
+```bash
+prisma generate
+```
+
+```typescript
+// PostgreSQL only; `prisma | database` is a valid PostgreSQL tsquery expression.
+where: {
+  content: {
+    search: 'prisma | database'
+  }
+}
+```
+
+For PostgreSQL, create the required full-text index (for example, a GIN index) with a
+database migration. The `@@fulltext` index syntax is MySQL-specific.

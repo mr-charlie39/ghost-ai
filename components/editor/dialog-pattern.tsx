@@ -52,7 +52,7 @@ export function DialogPattern({
       )}
       <DialogContent
         className={cn(
-          "rounded-3xl border border-surface-border bg-surface p-6 shadow-2xl text-copy-primary sm:max-w-md",
+          "max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl border border-surface-border bg-surface p-6 shadow-2xl text-copy-primary sm:max-w-md",
           contentClassName
         )}
       >

@@ -52,12 +52,12 @@ npx create-prisma@latest my-api --template hono --provider postgres --yes --json
 - `module.ts` provisioning one service named `app`. With `--provider postgres`, it also provisions `postgres({ name: "database", contract, config: "./prisma.config.ts" })` from `@prisma/composer-prisma-cloud/orm`, so the deploy applies the generated migrations. With `--provider mongo`, it binds `envSecret("MONGODB_URL")` to the service input.
 - `service.ts` with the build adapter for the template; see [`app-framework-builds.md`](app-framework-builds.md).
 - `prisma.config.ts` with `orm`, `skills`, and `composer` sections. The `composer` section uses `prismaCloud({ region: "us-east-1" })`; change the region before the first deploy if the app belongs elsewhere.
-- Scripts: `composer:dev` (`prisma dev module.ts`), `composer:deploy` (`prisma deploy module.ts`), `dev:composer` (build, then `composer:dev`), and `deploy` (build, then `composer:deploy`). The `deploy` script targets production; pass a stage with `npx prisma deploy module.ts --stage <name>` instead.
+- Scripts: `composer:dev` (`prisma dev`), `composer:deploy` (`prisma deploy`), `dev:composer` (build, then `composer:dev`), and `deploy` (build, then `composer:deploy`). The `deploy` script targets production; pass a preview environment with `npx prisma deploy --environment <name>` instead.
 - `/.prisma-composer` in `.gitignore`.
 
 ## Deploy Flow
 
-With deploy enabled, `create-prisma` runs `prisma auth whoami`, selects the workspace, checks that no project already has the app's name, runs the build script, and runs `prisma deploy module.ts --report <tmp>`. Without a session it signs in interactively in a terminal; in `--json` mode or without a TTY it stops with `not_authenticated`, keeps the scaffold, and tells the user to sign in and run the `deploy` script.
+With deploy enabled, `create-prisma` runs `prisma auth whoami`, selects the workspace, checks that no project already has the app's name, runs the build script, and runs `prisma deploy --report <tmp>`. Without a session it signs in interactively in a terminal; in `--json` mode or without a TTY it stops with `not_authenticated`, keeps the scaffold, and tells the user to sign in and run the `deploy` script.
 
 ## Rules
 
@@ -81,7 +81,7 @@ cd my-api
 npm run dev:composer
 ```
 
-Verify locally, then deploy a stage with `npm run build && npx prisma deploy module.ts --stage preview`.
+Verify locally, then deploy a preview with `npm run build && npx prisma deploy --environment preview`.
 
 ## References
 

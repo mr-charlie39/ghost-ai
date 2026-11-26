@@ -89,10 +89,14 @@ The caller gets a `504` after 60 seconds, and the instance can sleep while the w
 ```ts
 app.post("/webhook", async (c) => {
   const job = await c.req.json();
-  waitUntil(processForTwoMinutes(job), { signal: AbortSignal.timeout(5 * 60_000) });
+  const savedJob = await enqueueDurably(job);
   return c.body(null, 202);
 });
 ```
+
+The worker consumes `savedJob` from the durable queue and retries failures. Persist or enqueue the
+job before returning `202`; `waitUntil` alone does not guarantee completion if an instance sleeps
+or stops.
 
 ## References
 

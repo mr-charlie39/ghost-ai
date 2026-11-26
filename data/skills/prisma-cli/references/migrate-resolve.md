@@ -37,13 +37,15 @@ This tells Prisma "Assume this migration has already run".
 
 ### Mark as Rolled Back (Fixing Failures)
 
-If a migration failed (e.g., syntax error) and you fixed the SQL or want to retry:
+If a migration failed, inspect the database before retrying. Reconcile or undo every change
+the failed attempt already made, or make the migration safe to rerun:
 
 ```bash
 prisma migrate resolve --rolled-back 20240115120000_failed_migration
 ```
 
-This tells Prisma "Forget this migration run, let me try applying it again".
+This updates migration history only; it does not undo database changes. Alternatively,
+complete and verify every remaining migration effect, then mark the migration applied.
 
 ## Use Cases
 

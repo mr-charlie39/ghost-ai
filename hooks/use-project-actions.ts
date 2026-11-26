@@ -5,18 +5,23 @@ import { useRouter } from "next/navigation";
 import { generateRoomId, generateShortSuffix } from "@/lib/slug";
 import type { ProjectItem } from "@/types/project";
 
+const EMPTY_PROJECTS: ProjectItem[] = [];
+
 export interface UseProjectActionsOptions {
   initialOwnedProjects?: ProjectItem[];
   initialSharedProjects?: ProjectItem[];
   activeProjectId?: string;
+  activeRoomId?: string;
 }
 
 export function useProjectActions(options: UseProjectActionsOptions = {}) {
   const {
-    initialOwnedProjects = [],
-    initialSharedProjects = [],
+    initialOwnedProjects = EMPTY_PROJECTS,
+    initialSharedProjects = EMPTY_PROJECTS,
     activeProjectId,
+    activeRoomId,
   } = options;
+  const currentActiveId = activeRoomId || activeProjectId;
   const router = useRouter();
 
   // Project lists (initialized from server-fetched props)
@@ -208,7 +213,7 @@ export function useProjectActions(options: UseProjectActionsOptions = {}) {
       closeDeleteDialog();
 
       // Redirect to /editor if deleting the active workspace; otherwise refresh
-      if (activeProjectId && targetId === activeProjectId) {
+      if (currentActiveId && targetId === currentActiveId) {
         router.push("/editor");
       } else {
         router.refresh();
@@ -219,7 +224,7 @@ export function useProjectActions(options: UseProjectActionsOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, activeProjectId, closeDeleteDialog, router]);
+  }, [selectedProject, currentActiveId, closeDeleteDialog, router]);
 
   return {
     // Project Lists

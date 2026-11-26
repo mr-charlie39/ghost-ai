@@ -13,32 +13,32 @@ HIGH
 ## Commands
 
 ```bash
-npx prisma deploy module.ts --help
-npx prisma dev module.ts --help
+npx prisma deploy --help
+npx prisma dev --help
 ```
 
 | You want to | Run |
 |-------------|-----|
-| Run the app locally, no credentials | `npm run build && npx prisma dev module.ts` |
-| Deploy a preview | `npm run build && npx prisma deploy module.ts --stage <name>` |
-| Deploy production | `npm run build && npx prisma deploy module.ts` |
-| Deploy under another app name | `npx prisma deploy module.ts --name <name>` |
-| Write the outcome as JSON | `npx prisma deploy module.ts --report deploy-report.json` |
+| Run the app locally, no credentials | `npm run build && npx prisma dev` |
+| Deploy a preview | `npm run build && npx prisma deploy --environment <name>` |
+| Deploy production | `npm run build && npx prisma deploy` |
+| Deploy under another app name | `npx prisma deploy --name <name>` |
+| Write the outcome as JSON | `npx prisma deploy --report deploy-report.json` |
 
-`<entry>` is the file whose default export is the root module, usually `module.ts`.
+Set the root module path with `entry` in the `composer` section of `prisma.config.ts`.
 
 ## Before Deploying
 
 1. Build. `deploy` and `dev` package what the build already produced.
-2. Run `npx prisma dev module.ts` and request each local URL it prints. It runs the same pipeline against local emulators, with a real local Postgres, and needs no account. `Ctrl-C` leaves local data in place.
+2. Run `npx prisma dev` and request each local URL it prints. It runs the same pipeline against local emulators, with a real local Postgres, and needs no account. `Ctrl-C` leaves local data in place.
 3. Check auth: `npx prisma auth whoami --json`. If no one is signed in, ask the user to run `npx prisma auth login`; it opens a browser and cannot be done by an agent.
 4. For a new project, set a region: `prismaCloud({ region })` in `prisma.config.ts` or `PRISMA_REGION`.
-5. Decide the target with the user. No `--stage` changes production.
+5. Decide the target with the user. No `--environment` changes production.
 
 ## Production and Stages
 
-- No `--stage`: production. In platform terms the app is a project named after the root module, and production is its default branch.
-- `--stage <name>`: a complete, isolated copy of the app as a preview branch of the same project, with its own services, databases, and configuration. Only the code is shared. The name must be a valid Git ref name; an invalid one fails the deploy.
+- No `--environment`: production. In platform terms the app is a project named after the root module, and production is its default branch.
+- `--environment <name>`: a complete, isolated copy of the app as a preview environment of the same project, with its own services, databases, and configuration. Only the code is shared. The name must be a valid environment name; an invalid one fails the deploy.
 - Redeploying is idempotent: the deploy compares the module with the recorded deploy state and applies the difference. Removing a `provision()` from the module deletes that resource on the next deploy. A deploy never deletes the last service, the project, or a branch.
 - Deploy state lives on the platform, per branch, so a workstation and CI see the same state. Concurrent deploys of one environment take turns through a lease; a second deploy fails while the first holds it, and a crashed deploy's lease expires after about a minute.
 
@@ -85,7 +85,7 @@ Any CI runs the same commands with the two credential variables as secrets:
 ```bash
 npm ci
 npm run build
-npx prisma deploy module.ts --stage "pr-$PR_NUMBER" --json --report deploy-report.json
+npx prisma deploy --environment "pr-$PR_NUMBER" --json --report deploy-report.json
 ```
 
 `--build-id <id>` joins a build record your CI already created through `POST /v1/builds`.
@@ -94,8 +94,8 @@ npx prisma deploy module.ts --stage "pr-$PR_NUMBER" --json --report deploy-repor
 
 The CLI has no `destroy` command, and `branch` has no delete.
 
-- Connected GitHub repository: deleting the Git branch tears down the matching preview (services, databases, buckets). Production and the default branch are never torn down this way.
-- Otherwise: call `destroy` from `@prisma/composer/control` with an explicit target. It needs `PRISMA_SERVICE_TOKEN` and `PRISMA_WORKSPACE_ID` in the environment and the app already built:
+- Connected GitHub repository: deleting the Git branch does not tear down a preview that has a custom domain. Remove the domain, then verify or explicitly tear down the preview's services and data. Production and the default branch are never torn down by branch deletion.
+- Otherwise: call `destroy` from `@prisma/composer/control` with an explicit environment. It needs `PRISMA_SERVICE_TOKEN` and `PRISMA_WORKSPACE_ID` in the environment and the app already built:
 
 ```ts
 // destroy-stage.ts
@@ -103,30 +103,29 @@ import { destroy } from "@prisma/composer/control";
 import prismaConfig from "./prisma.config.ts";
 
 const result = await destroy({
-  entry: "module.ts",
   config: { value: prismaConfig.composer, file: "prisma.config.ts" },
-  target: { kind: "stage", stage: "pr-42" },
+  environment: "pr-42",
 });
 if (!result.ok) throw new Error(`${result.failure.code}: ${result.failure.message}`);
 ```
 
-`config` is required in `@prisma/composer` 0.28.0: the `composer` section and the path of the file that declares it. Pass `name` when the app was deployed with `--name`. `target` is `{ kind: "stage", stage }` or `{ kind: "production" }` and has no default. Destroying a stage removes its resources, branch, and data; destroying production removes its resources and deletes the project once it is empty. Get the user's confirmation first. The deploy action's `mode: destroy` does not work against the current CLI.
+`config` is required in `@prisma/composer` 0.28.0: the `composer` section and the path of the file that declares it. Pass `name` when the app was deployed with `--name`. Set `environment` to a preview name such as `pr-42` or to `production`; there is no default. Destroying an environment removes its resources and data; destroying production removes its resources and deletes the project once it is empty. Get the user's confirmation first. The deploy action's `mode: destroy` does not work against the current CLI.
 
 ## Bad
 
 ```bash
-npx prisma deploy module.ts
+npx prisma deploy
 ```
 
-Run without a build, this deploys whatever stale output is on disk, and without `--stage` it targets production.
+Run without a build, this deploys whatever stale output is on disk, and without `--environment` it targets production.
 
 ## Good
 
 ```bash
 npm run build
-npx prisma dev module.ts            # verify locally, then Ctrl-C
+npx prisma dev                      # verify locally, then Ctrl-C
 npx prisma auth whoami --json
-npx prisma deploy module.ts --stage feat-search --json --report deploy-report.json
+npx prisma deploy --environment feat-search --json --report deploy-report.json
 npx prisma project link my-app
 npx prisma service list --branch feat-search --json
 ```

@@ -49,7 +49,9 @@ a project already on Prisma 8 (use the synced `prisma-8` skill), or a new projec
 Install exact versions with `--save-exact`. For an app headed to Compute, use the versions the
 Console's setup uses: today `prisma` `8.0.0-rc.27` (dev dependency) and `@prisma/orm-postgres`
 `8.0.0-rc.20`. If the Console's message or an existing setup pull request names other versions,
-use those. Use Node.js 24.11 or newer if the app will run under `prisma dev`.
+use those. Prisma 8 requires Node.js 22.18 or newer on the 22 line, 24.11 or newer on the 24
+line, or 26 or newer. TypeScript 5.9 or newer is required only when the project uses TypeScript.
+Use Node.js 24.11 or newer if the app will run under `prisma dev`.
 
 ## The path
 

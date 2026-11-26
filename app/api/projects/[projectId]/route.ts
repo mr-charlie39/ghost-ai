@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 
 interface RouteParams {
   params: Promise<{
@@ -51,7 +52,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     }
 
     const updatedProject = await prisma.project.update({
-      where: { id: projectId },
+      where: { id: projectId, ownerId: userId },
       data: {
         name: body.name.trim(),
       },
@@ -62,6 +63,15 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
     return NextResponse.json(updatedProject);
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Project not found or no longer accessible" },
+        { status: 404 }
+      );
+    }
     console.error("PATCH /api/projects/[projectId] error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
@@ -105,11 +115,20 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
     }
 
     await prisma.project.delete({
-      where: { id: projectId },
+      where: { id: projectId, ownerId: userId },
     });
 
     return NextResponse.json({ success: true, id: projectId });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Project not found or no longer accessible" },
+        { status: 404 }
+      );
+    }
     console.error("DELETE /api/projects/[projectId] error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },

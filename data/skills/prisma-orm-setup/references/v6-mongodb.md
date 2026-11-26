@@ -45,7 +45,9 @@ model User {
 
 ### Relations
 
-Relations in MongoDB expect IDs to be `db.ObjectId` type.
+Relation scalar types must match the stored ID type. Use `@db.ObjectId` only when both the
+referenced ID and relation field are stored as BSON ObjectIds; retain `String` fields without
+`@db.ObjectId` for relations whose stored IDs are strings.
 
 ```prisma
 model Post {

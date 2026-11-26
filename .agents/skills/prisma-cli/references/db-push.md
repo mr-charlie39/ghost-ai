@@ -66,7 +66,6 @@ prisma generate
 
 - **Prototyping** - Rapid schema iteration
 - **Local development** - Quick schema changes
-- **MongoDB** - Primary workflow (migrations not supported)
 - **Testing** - Setting up test databases
 
 ## When NOT to Use
@@ -86,15 +85,11 @@ prisma generate
 | Rollback capability | No | Yes |
 | Best for | Prototyping | Development |
 
-## MongoDB Workflow
+## MongoDB
 
-MongoDB doesn't support migrations. Use `db push` exclusively:
-
-```bash
-# Schema changes for MongoDB
-prisma db push
-prisma generate
-```
+MongoDB `db push` is not part of the Prisma 7 workflow. For MongoDB, follow the
+version-specific Prisma 6.19 instructions in
+[`prisma-mongodb-upgrade`](../prisma-mongodb-upgrade/SKILL.md).
 
 ## Common Patterns
 
@@ -143,8 +138,13 @@ prisma db push --accept-data-loss
 When ready for production, switch to migrations:
 
 ```bash
-# Create baseline migration from current schema
-prisma migrate dev --name init
+# For an existing database with data to preserve, generate a baseline from the schema
+mkdir -p prisma/migrations/0_init
+prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_init/migration.sql
+prisma migrate resolve --applied 0_init
 ```
 
-Then use `migrate dev` for future changes.
+`migrate resolve --applied` records the baseline as applied; it does not execute its SQL.
+Then use `migrate dev` for future changes. For a disposable development database only,
+`prisma migrate dev --name init` can create the first migration and apply it; do not use it
+to initialize history against existing tables whose data must be retained.

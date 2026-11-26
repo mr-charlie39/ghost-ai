@@ -16,6 +16,10 @@ output (`dist/`) ships, so anything the server loads from outside it is missing 
 The app must be on Prisma 8 first. A Prisma ORM 6 or 7 app upgrades with the
 `prisma-postgres-upgrade` skill, then comes back here.
 
+The imports from `./prisma/contract.js` and `./prisma/contract.json` below assume the Prisma 8
+config writes the emitted contract to `src/prisma` (as shown in the setup pull request). Keep
+the imports aligned with the actual configured output directory.
+
 Fixes 1 to 3 and 5 work around current gaps in the setup pull request, which the Console is
 fixing. Read what the pull request already contains first, and only change what it gets wrong.
 
@@ -44,6 +48,20 @@ When the user has not connected the repository in the Console, write these, then
 to 6. Connecting it later (Console, or the interactive `npx prisma git connect`) opens a setup
 pull request; reconcile it with these files.
 
+Before connecting or pushing, associate the repository with the intended Prisma project:
+
+1. List projects and ask the user which existing project to use, or create one with the user's
+   chosen name and region (`npx prisma project create <project-name> --region <region>`).
+2. Link this checkout to that project with `npx prisma project link <project-name>`.
+3. Connect the repository with the interactive `npx prisma git connect` and complete its
+   browser flow.
+4. Only after the project is linked and the repository is connected should a push trigger or
+   confirm a preview deployment. Do not treat `service list` as evidence of a preview before
+   that deployment completes.
+
+Ask for explicit consent before any production deployment, including a push to the connected
+default branch.
+
 - Install `@prisma/composer` and `@prisma/composer-prisma-cloud` at the version above.
 - Add to `prisma.config.ts`:
 
@@ -52,7 +70,7 @@ pull request; reconcile it with these files.
   import { nodeBuild } from "@prisma/composer/node/control";
   import { prismaCloud, prismaState } from "@prisma/composer-prisma-cloud/control";
   // inside definePrismaConfig({ ... }):
-  composer: composer({ extensions: [prismaCloud(), nodeBuild()], state: prismaState() }),
+  composer: composer({ entry: "./module.mjs", extensions: [prismaCloud(), nodeBuild()], state: prismaState() }),
   ```
 
   Leave the region for the user (`prismaCloud({ region })` or `PRISMA_REGION`); see
@@ -114,7 +132,7 @@ pull request; reconcile it with these files.
    - Listen on `service.port()` and `"0.0.0.0"`, not `process.env.PORT`.
    - Outside a Composer run, `service.load()` throws `missing required config param "url"`. So
      `npm start`, a `tsx` dev script and any `Procfile` stop working. Run locally with
-     `npm run build && npx prisma dev module.mjs`, and make that the `dev` script. It starts a
+     `npm run build && npx prisma dev`, and make that the `dev` script. It starts a
      local Prisma Postgres, applies `migrations/app/`, and prints `dev: ready`. That database is
      empty.
    - A seed script must not import `db.ts`. Keep its own `postgres({ contract, url })` client,

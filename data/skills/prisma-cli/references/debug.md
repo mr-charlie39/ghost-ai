@@ -10,13 +10,8 @@ prisma debug [options]
 
 ## What It Does
 
-Outputs details about your Prisma environment, including:
-- Prisma CLI version
-- Prisma Client version (if installed)
-- Engine binaries (Query Engine, Migration Engine, etc.)
-- Platform information (OS, Architecture)
-- Node.js version
-- Configured datasource provider
+Outputs diagnostic information such as schema and config paths, cache paths, and environment
+settings. Use `prisma version` for Prisma CLI, Client, engine, platform, and Node.js details.
 
 ## Options
 
@@ -25,22 +20,14 @@ Outputs details about your Prisma environment, including:
 | `--schema` | Path to schema file |
 | `--config` | Custom path to your Prisma config file |
 
-## Example Output
+## Version checks
 
-```
-prisma               : 7.3.0
-@prisma/client       : 7.3.0
-Operating System     : darwin
-Architecture         : arm64
-Node.js              : v20.10.0
-TypeScript           : 5.3.3
-Query Compiler       : enabled
-PSL                  : ...
-Schema Engine        : ...
+```bash
+prisma version
 ```
 
 ## When to Use
 
-- **Troubleshooting**: Checking version mismatches
+- **Troubleshooting**: Checking configured paths and environment settings
 - **Reporting Issues**: Including environment info in GitHub issues
 - **Verifying Installation**: Ensuring correct binaries are downloaded

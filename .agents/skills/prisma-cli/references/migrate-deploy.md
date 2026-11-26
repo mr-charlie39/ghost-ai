@@ -91,10 +91,12 @@ CMD npx prisma migrate deploy && node dist/index.js
 
 If a migration fails, `migrate deploy` exits with error. The failed migration is marked as failed in `_prisma_migrations`.
 
-To fix:
-1. Resolve the issue (fix SQL, database state, etc.)
-2. Mark as resolved: `prisma migrate resolve --applied <migration_name>`
-3. Re-run: `prisma migrate deploy`
+To recover, inspect the failed migration and the database to determine which steps completed.
+Either complete and verify every remaining migration effect, then run
+`prisma migrate resolve --applied <migration_name>` (this records success; it does not execute
+the migration SQL), or reconcile/undo partial changes and run
+`prisma migrate resolve --rolled-back <migration_name>`. Re-run `prisma migrate deploy` only
+after the database and migration state are consistent.
 
 ### Check status first
 
@@ -121,7 +123,9 @@ export default defineConfig({
 
 ## Best Practices
 
-1. Always run `migrate status` before `migrate deploy` in CI
+1. Run `migrate deploy` before using `migrate status` as a post-deploy check. Pending
+   migrations make `migrate status` return a nonzero exit code in Prisma 7; if checking
+   status before deployment, handle that expected result so it cannot block deployment.
 2. Have a rollback plan (backup before migrations)
 3. Test migrations in staging first
 4. Never use `migrate dev` in production

@@ -77,7 +77,9 @@ Use a driver adapter for the standard SQL workflow.
 
 ## Using Driver Adapter (LibSQL / Turso)
 
-For edge compatibility or Turso:
+For edge compatibility or Turso, this adapter connects the application runtime to Turso. The
+Prisma 7 CLI schema operations still use the local SQLite URL in `prisma.config.ts`; `migrate dev`
+and `db push` do not apply changes to the remote Turso database.
 
 1. Install:
    ```bash
@@ -88,14 +90,42 @@ For edge compatibility or Turso:
    ```typescript
    import 'dotenv/config'
    import { PrismaClient } from '../generated/client'
-   import { PrismaLibSql } from '@prisma/adapter-libsql'
+   import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
-   const adapter = new PrismaLibSql({
+   const adapter = new PrismaLibSQL({
      url: process.env.TURSO_DATABASE_URL,
      authToken: process.env.TURSO_AUTH_TOKEN,
    })
    const prisma = new PrismaClient({ adapter })
    ```
+
+To apply a schema change to Turso, generate and review SQL with the Prisma 7 CLI, then execute
+that SQL using the remote libSQL client. For a new, empty database:
+
+```bash
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > migration.sql
+```
+
+```typescript
+import 'dotenv/config'
+import { readFile } from 'node:fs/promises'
+import { createClient } from '@libsql/client'
+
+const url = process.env.TURSO_DATABASE_URL
+const authToken = process.env.TURSO_AUTH_TOKEN
+if (!url || !authToken) throw new Error('TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are required')
+
+const client = createClient({ url, authToken })
+try {
+  await client.executeMultiple(await readFile('migration.sql', 'utf8'))
+} finally {
+  client.close()
+}
+```
+
+For an existing database, generate the diff from a schema snapshot that matches its current
+state, review any destructive SQL, and apply through the same remote client. Do not treat the
+local SQLite file as the Turso database.
 
 ## Limitations
 

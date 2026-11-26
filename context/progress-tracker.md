@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Next feature unit (Canvas setup, Liveblocks room integration, or Project management).
+- Next feature unit (Shape-specific node visuals, node editing, or edge rendering).
 
 ## Completed
 
@@ -79,13 +79,154 @@ Update this file whenever the current phase, active feature, or implementation s
   - Resolved Turbopack build optimization for Tailwind CSS v4 in `next.config.ts` via `@tailwindcss/turbopack` loader rules.
   - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
 
+- **Feature 08: Editor Workspace Shell & Access Control** (`context/feature-specs/08-editor-workspace-shell.md`)
+  - Created server-side access helpers in `lib/project-access.ts` (`getCurrentIdentity`, `checkProjectAccess`) checking project existence and access permissions via owner or collaborator email.
+  - Implemented `components/editor/access-denied.tsx` with centered layout, Lock icon, informative message, and back-to-projects link.
+  - Built the `/editor/[roomId]` server component in `app/editor/[roomId]/page.tsx` redirecting unauthenticated users to `/sign-in` and showing `AccessDenied` for non-existent or unauthorized projects.
+  - Extended `ProjectSidebar` to highlight the current active room in both owned and shared lists.
+  - Updated `EditorLayout` to display project name in navbar, support navbar actions (Share button placeholder and AI sidebar toggle button), central canvas placeholder filling remaining space, and collapsible right sidebar placeholder for future AI chat.
+  - Enhanced UI/UX across the editor chrome with technical dark aesthetics:
+    - Added brand mark (`GHOST.AI` + icon badge) and glassmorphism backdrop blur to `EditorNavbar`.
+    - Upgraded `EditorHome` with blueprint corner guides, ambient icon pulse, feature capability pills, and primary action glows.
+    - Added instant workspace search/filtering by name and slug in `ProjectSidebar`, along with tab counts and active workspace indicator bars.
+    - Created `WorkspaceCanvasPlaceholder` with interactive Room ID copy feedback, live connection status chips, and floating canvas controls preview.
+    - Upgraded `ProjectDialogs` with Hash room preview labels and destructive warning callout styling.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+
+- **UI/UX Enhancement & Brand Identity Polish (AI Architecture Workspace)**
+  - Designed official vector SVG brand assets (`components/brand/ghost-logo.tsx`, `components/brand/index.ts`):
+    - `GhostLogoMark`: Interconnected distributed graph node geometry with cyan-to-violet linear gradient core and ambient glow.
+    - `GhostLogo`: Wordmark paired with monospace engine badge (`v0.1`), scalable across navbar, auth views, and canvas screens.
+  - Integrated brand identity into `EditorNavbar`, `AuthLayout`, `EditorHome`, and `AccessDenied`.
+  - Upgraded AI Architect Drawer in `EditorLayout` with interactive prompt suggestion pills, functional input state with dispatch action toast, and live worker connection status indicator.
+  - Upgraded `WorkspaceCanvasPlaceholder` with interactive "Copy Room ID" feedback, live Liveblocks presence indicator, and floating canvas control toolbar.
+  - Enhanced `ProjectSidebar` with live search filter across owned and shared projects, project count badges, and glowing active-workspace accents.
+  - Preserved 100% of underlying server/client architecture and zero-modification invariant on foundation UI primitives in `components/ui/*`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful Turbopack build (`npm run build`).
+
+- **Feature 09: Share Dialog & Collaborator Management** (`context/feature-specs/09-share-dialog.md`)
+  - Created `types/collaborator.ts` defining data contracts for `CollaboratorItem`, `ProjectOwnerItem`, and `CollaboratorsApiResponse`.
+  - Implemented Clerk Backend API user enrichment in `lib/clerk-users.ts` (`enrichEmailsWithClerk`, `getOwnerInfoFromClerk`):
+    - Queries Clerk backend for user profiles matching collaborator emails in batches of up to 100.
+    - Resolves display names (`firstName` + `lastName` or `username`) and avatar images (`imageUrl`).
+    - Falls back gracefully to email-only representation if the Clerk user does not exist or API calls encounter errors.
+    - Retrieves workspace owner identity and display data via Clerk `ownerId`.
+  - Created collaborator management REST API routes:
+    - `GET /api/projects/[projectId]/collaborators`: Verifies user access (owner or collaborator membership), queries `ProjectCollaborator` records in Prisma, enriches with Clerk metadata, and returns `{ isOwner, owner, collaborators }`.
+    - `POST /api/projects/[projectId]/collaborators`: Strictly enforces server-side project ownership (403 Forbidden for non-owners), validates email format, checks for duplicate invitations and owner self-invitation, stores `ProjectCollaborator` record in Prisma, enriches with Clerk, and returns status 201.
+    - `DELETE /api/projects/[projectId]/collaborators/[collaboratorId]`: Strictly enforces server-side project ownership (403 Forbidden for non-owners), verifies project and collaborator records, deletes from Prisma, and returns success response.
+    - `DELETE /api/projects/[projectId]/collaborators`: Additional flexible route accepting `collaboratorId` or `email` via query parameter or JSON body for client resilience.
+  - Implemented `components/editor/share-dialog.tsx`:
+    - Adheres to dark workspace color tokens (`bg-surface`, `border-surface-border`, `text-copy-primary`, `rounded-3xl` modal radius).
+    - Project link section with one-click "Copy link" and 2-second temporary `Copied!` feedback.
+    - Owners view:
+      - Email invite input and submit button with loading spinner, validation, and inline success/error feedback.
+      - Collaborator removal action with trash icon, loading state, and state update on completion.
+      - Collaborators view:
+        - Read-only banner indicating collaborator access.
+        - Invite form and removal controls are hidden.
+      - Member list displaying Owner row with Crown badge and Collaborator rows with avatar image (or letter-initial fallback), display name, email, and role badge.
+    - Wired `ShareDialog` into `EditorLayout` and `app/editor/[roomId]/page.tsx`:
+      - Workspace page passes `isOwner` prop down from `checkProjectAccess`.
+      - Navbar `Share` button triggers `ShareDialog`.
+    - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful production build (`npm run build`).
+
+- **Feature 10: Liveblocks Realtime Collaboration Infrastructure** (`context/feature-specs/10-liveblocks-setup.md`)
+  - Configured `liveblocks.config.ts` at the project root with strictly typed Liveblocks interfaces:
+    - `Presence`: `cursor: { x: number; y: number } | null`, `isThinking: boolean`.
+    - `UserMeta`: `id: string`, `info: { name: string; avatar: string; color: string }`.
+    - Typed empty record structures for `Storage`, `RoomEvent`, `ThreadMetadata`, `RoomInfo` eliminating ESLint `no-empty-object-type` errors.
+  - Installed `@liveblocks/node` dependency.
+  - Created cached singleton Liveblocks node client in `lib/liveblocks.ts` using `globalThis` in development, with fallback placeholder key to ensure builds succeed when secret key is unset.
+  - Implemented `getUserColor(userId)` in `lib/liveblocks.ts` deterministically mapping any Clerk user ID to a consistent high-contrast cursor color from a 10-color fixed palette (`USER_COLORS`).
+  - Implemented `POST /api/liveblocks-auth` route (`app/api/liveblocks-auth/route.ts`):
+    - Requires Clerk authentication (returns 401 if unauthenticated).
+    - Verifies project access using existing access helper `checkProjectAccess` (returns 403 Forbidden for unauthorized access or missing projects).
+    - Ensures the Liveblocks room exists using `liveblocks.getOrCreateRoom(room, { defaultAccesses: [], metadata: { projectId: room } })`.
+    - Prepares user session token via `liveblocks.prepareSession` attaching user display name, avatar, and generated cursor color.
+    - Grants room write permissions via `session.allow(room, session.FULL_ACCESS)`.
+    - Authorizes session and returns the session token JSON response with appropriate status.
+  - Updated `package.json` build script to invoke `next build` with Turbopack, resolving the Node 26.13.0 Webpack `WasmHash._updateWithBuffer` buffer crash.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful production build (`npm run build`).
+
+- **Feature 11: Base Collaborative Canvas** (`context/feature-specs/11-base-canvas.md`)
+  - Defined shared canvas types in `types/canvas.ts`:
+    - `CanvasNodeData` supporting `label: string`, `color?: string`, and `shape?: NodeShape`.
+    - Custom node and edge contracts: `CanvasNode`, `canvasNode`, `CanvasEdge`, `canvasEdge`.
+    - 6 supported node shapes (`NODE_SHAPES`) and 8 dark-mode calibrated color pairs (`NODE_COLORS`).
+    - Default constants: `DEFAULT_NODE_COLOR = "#1F1F1F"`, `DEFAULT_NODE_TEXT_COLOR = "#EDEDED"`, `DEFAULT_EDGE_COLOR = "#06090C"`.
+  - Built client-side canvas components in `components/canvas/`:
+    - `CanvasWrapper` (`components/canvas/canvas-wrapper.tsx`): Sets up Liveblocks collaboration room via `LiveblocksProvider` with `authEndpoint="/api/liveblocks-auth"`, `RoomProvider` keyed by `roomId`, initial presence `{ cursor: null, isThinking: false }`, `CanvasErrorBoundary` for connection/room error handling, and `ClientSideSuspense` displaying `CanvasLoading`.
+    - `CanvasView` (`components/canvas/canvas-view.tsx`): Controlled React Flow canvas wrapped in `ReactFlowProvider` and backed by `useLiveblocksFlow<CanvasNode, CanvasEdge>({ suspense: true, nodes: { initial: [] }, edges: { initial: [] } })`, featuring loose connection behavior (`connectionMode={ConnectionMode.Loose}`), `fitView`, dot-pattern background (`BackgroundVariant.Dots`), dark-styled `MiniMap`, and live multiplayer `Cursors`.
+    - `CanvasErrorBoundary` (`components/canvas/canvas-error-boundary.tsx`): Robust React class error boundary capturing room/suspense exceptions with clear visual feedback, room badge, and reconnect action.
+    - `CanvasLoading` (`components/canvas/canvas-loading.tsx`): Dark workspace loading indicator with animated brand mark and connection status.
+    - `components/canvas/index.ts` re-exporting all canvas components.
+  - Kept workspace route (`app/editor/[roomId]/page.tsx`) server-side with Clerk authentication, access control via `checkProjectAccess`, and server-fetched projects, mounting `CanvasWrapper` directly inside `EditorLayout`.
+  - Adjusted `liveblocks.config.ts` storage typing to empty interface eliminating TS2741 required initialStorage constraint while maintaining strict ESLint compliance.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint` - 0 errors, 0 warnings), and successful Next.js production build (`npm run build`).
+
+- **Engineering Repair & Runtime Verification** (`context/current-issues.md`)
+  - **Issue 1 (Clerk Authentication API Error)**:
+    - Diagnosed abort exception (`This operation was aborted`) originating from client lifecycle / prefetch stream cancellations on `currentUser()`.
+    - Wrapped `getCurrentIdentity()` with React `cache()` to eliminate duplicate calls within the same server request.
+    - Added resilient fallback using `clerkClient().users.getUser(userId)` when `currentUser()` is aborted or cancelled.
+    - Replaced noisy abort stack traces with clean lifecycle notifications (`isAbortError`), ensuring transient client navigation cancels do not crash unrelated functionality.
+    - Verified that Clerk publishable key (`pk_test_...`) and secret key (`sk_test_...`) belong to the exact same instance (`pro-griffon-714.clerk.accounts.dev` / `ins_3MGoYu2j8iWeGrt5pV7W6wyFZxj`).
+  - **Issue 2 & 3 (Liveblocks Secret Key & Connection Failure)**:
+    - Added `isLiveblocksConfigured()` helper to `lib/liveblocks.ts` checking for presence of valid keys starting with `sk_dev_` or `sk_prod_`.
+    - Updated `POST /api/liveblocks-auth` to validate environment configuration before attempting Liveblocks API operations, returning descriptive JSON errors on missing or invalid keys.
+    - Caught `LiveblocksError` during `liveblocks.getOrCreateRoom()` and returned structured 403 response without unhandled server crashes.
+    - Enhanced `CanvasErrorBoundary` with an informative configuration notice providing direct links to the Liveblocks dashboard (`https://liveblocks.io/dashboard/apikeys`), actionable setup instructions for `.env.local`, and retry controls without crashing the parent editor workspace.
+    - Updated `CanvasWrapper` to capture detailed HTTP error messages from `/api/liveblocks-auth` and display them in the error boundary.
+  - **Issue 4 (Clerk & Liveblocks Integration Ordering)**:
+    - Established strict separation of concerns in `app/api/liveblocks-auth/route.ts`:
+      1. Authentication verification via Clerk (`getCurrentIdentity()`).
+      2. Authorization check against Prisma database (`checkProjectAccess()`) using verified user emails.
+      3. Liveblocks credential validation (`isLiveblocksConfigured()`).
+      4. Room verification/creation (`liveblocks.getOrCreateRoom()`).
+      5. Session preparation and token issuance (`liveblocks.prepareSession()`).
+  - **Issue 5 (Port Conflict)**:
+    - Diagnosed process `14372` as an external Node.js project ("Zyphora Sattar Site") utilizing port 3000.
+    - Preserved unrelated process intact according to safety guidelines; Next.js runs cleanly on available port 3001.
+  - **Environment Configuration**:
+    - Created comprehensive `.env.example` documenting all required variables for Clerk, Liveblocks, and PostgreSQL.
+  - **Verification**:
+    - `npx tsc --noEmit`: PASSED (0 errors).
+    - `npm run lint`: PASSED (0 errors, 0 warnings).
+    - `npm run build`: PASSED (Production build generated successfully with Turbopack).
+- **Canvas Rendering Fix (React Flow & Liveblocks Styles)**
+  - Diagnosed unstyled/collapsed React Flow canvas (`<MiniMap>` rendering as a full-width top strip and `<Background>` / `<ReactFlow>` collapsing without layout styles) caused by missing `@xyflow/react/dist/style.css` and `@liveblocks/react-flow/styles.css` imports.
+  - Imported `@xyflow/react/dist/style.css` and `@liveblocks/react-flow/styles.css` in `components/canvas/canvas-view.tsx` and enabled `colorMode="dark"` on `<ReactFlow>`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint`), and successful production build (`npm run build`).
+
+- **Feature 12: Shape Panel** (`context/feature-specs/12-shape-panel.md`)
+  - Extended `types/canvas.ts` with `ShapeSize`, `SHAPE_DEFAULT_SIZES` (rectangle wider than tall, circle square, diamond slightly larger for label room, plus pill, cylinder, and hexagon), `SHAPE_DRAG_DATA_KEY`, and `ShapeDragPayload`.
+  - Created `components/canvas/shape-panel.tsx` (`ShapePanel`):
+    - Floating pill-shaped toolbar (`rounded-full`) positioned at the bottom-center of the canvas using dark workspace tokens (`bg-surface/90`, `border-surface-border`, `backdrop-blur-md`).
+    - Draggable Lucide icon buttons for all 6 shapes (`rectangle`, `diamond`, `circle`, `pill`, `cylinder`, `hexagon`), each serializing shape name and default size into `dataTransfer`.
+  - Created `components/canvas/canvas-node.tsx` (`CanvasNodeComponent`):
+    - Basic custom node renderer for the `canvasNode` type rendering every shape as a bordered rectangle with centered label, using `NODE_COLORS` / `DEFAULT_NODE_COLOR` and selection highlight (`border-brand`).
+  - Updated `components/canvas/canvas-view.tsx` (`CanvasView` / `CanvasFlowInner`):
+    - Registered `nodeTypes` with `canvasNode: CanvasNodeComponent`.
+    - Added `onDragOver` and `onDrop` handlers to the canvas wrapper.
+    - Validated dropped shape payload, converted screen coordinates to canvas coordinates via `useReactFlow().screenToFlowPosition`, generated node IDs using shape name, timestamp, and counter (`${shape}-${Date.now()}-${counter}`), and added new `canvasNode` nodes with empty label, `DEFAULT_NODE_COLOR`, and dragged shape via `onNodesChange`.
+    - Mounted `<ShapePanel />` inside the canvas wrapper.
+  - Exported `CanvasNodeComponent` and `ShapePanel` from `components/canvas/index.ts`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`), clean lint (`npm run lint` - 0 errors, 0 warnings), and `npx next typegen`. (`npm run build` hit a Turbopack internal error spawning the PostCSS worker on Node v26.13.0.)
+
+- **Canvas, Sidebar & Drag-and-Drop Fixes** (`context/current-issues.md`)
+  - Fixed `EditorLayout` right AI sidebar to float over the canvas (`fixed top-14 right-0 bottom-0 z-40`, `bg-surface/95 backdrop-blur-md`) instead of shrinking `<main>`, matching the left sidebar overlay behavior so the dotted canvas extends edge-to-edge underneath both sidebars.
+  - Fixed both `ProjectSidebar` (left) and AI sidebar (right) closed-state transforms (`-translate-x-[calc(100%+1rem)]` / `translate-x-[calc(100%+1rem)]`, `shadow-none`, `opacity-0`, `pointer-events-none`, `aria-hidden`, `inert`) so neither sidebar nor its shadow peeks onto the canvas when closed.
+  - Updated `CanvasView` (`<ReactFlow className="ghost-canvas !bg-base">` and `<Background className="!bg-base" color="var(--border-subtle)" />`) to eliminate React Flow dark-mode background mismatch (`#141414` vs `--bg-base`) and ensure a flush, edge-to-edge dotted canvas.
+  - Added `pointer-events-none` to `ShapePanel` button icons so SVG elements never intercept HTML5 drag events.
+
 ## In Progress
 
 - Next feature unit preparation.
 
 ## Next Up
 
-- Canvas setup and real-time collaboration foundations (Feature 08).
+- Feature 13: Shape-specific node visuals and node/edge editing.
 
 ## Open Questions
 
@@ -96,12 +237,19 @@ Update this file whenever the current phase, active feature, or implementation s
 - Configured Tailwind v4 with PostCSS plugin (`@tailwindcss/postcss`) and `@theme inline` mapping in `globals.css` for dark-only theme tokens (`--bg-base`, `--bg-surface`, `--text-copy-primary`, etc.) as defined in `ui-context.md`.
 - Bound shadcn semantic variables (`--background`, `--foreground`, `--card`, `--primary`, `--border`, etc.) directly to dark theme tokens in both `:root` and `.dark`.
 - Followed Next.js 16 file convention by placing `proxy.ts` at the root with `clerkMiddleware`, exporting default handler and registering matcher without calling deprecated `createRouteMatcher`.
-- Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`) to opt them out of instant-navigation validation when accessing runtime auth data during prerendering. Partial Prefetching (PPR) is configured separately via the `partialPrefetching` config flag and `prefetch` route segment exports.
-- Enforced resource-based auth protection directly in server components (`/` and `/editor`) alongside proxy route protection.
+- Set `export const instant = false` on dynamic / client-hook pages (`/`, `/editor`, `/sign-in`, `/sign-up`, `/editor/[roomId]`) to opt them out of instant-navigation validation when accessing runtime auth data during prerendering. Partial Prefetching (PPR) is configured separately via the `partialPrefetching` config flag and `prefetch` route segment exports.
+- Enforced resource-based auth protection directly in server components (`/`, `/editor`, `/editor/[roomId]`) alongside proxy route protection.
+- Isolated project access control in `lib/project-access.ts` verifying project existence and membership (owner or collaborator) before rendering workspace contents.
 - Configured Prisma 7 with schema folder support in `prisma7.config.ts`, generating type-safe Prisma Client to `app/generated/prisma`.
 - Implemented singleton pattern in `lib/prisma.ts` with connection branching between Prisma Accelerate (`prisma+postgres://`) and direct PostgreSQL connection via `@prisma/adapter-pg`.
 - Configured REST endpoints in `app/api/projects/` handling list, create, rename, and delete with defense-in-depth security: middleware-level 401 response for unauthenticated `/api/*` requests and handler-level ownership validation (403 Forbidden for non-owner mutations).
+- Cached singleton Liveblocks Node client in `lib/liveblocks.ts` on `globalThis` in development.
+- Liveblocks auth endpoint (`POST /api/liveblocks-auth`) secures rooms by verifying Clerk authentication and database project membership via `checkProjectAccess`, returning 403 on unauthorized access, auto-creating private rooms with `defaultAccesses: []`, and returning authorized session tokens with user info and deterministic cursor color.
+- Maintained server/client boundary for the workspace route: `WorkspacePage` (`app/editor/[roomId]/page.tsx`) executes server-side checks and fetches project lists, while `CanvasWrapper` acts as the client boundary initializing `LiveblocksProvider` and `RoomProvider`.
+- Wrapped `ReactFlow` in `ReactFlowProvider` and backed it by `useLiveblocksFlow<CanvasNode, CanvasEdge>({ suspense: true })` with `ConnectionMode.Loose`, dot-pattern background, dark-themed MiniMap, and multiplayer cursors.
 
 ## Session Notes
 
-- Feature 01, Feature 02, Feature 03, Feature 04, Feature 05, Feature 06, and Feature 07 completed and verified end-to-end.
+- Feature 01 through Feature 11 completed and verified end-to-end.
+- Master Engineering Repair & Audit completed: Clerk authentication abort resilience, Liveblocks configuration validation and error boundaries, proper auth/access ordering, and dev server port diagnosis verified.
+- Validation: `npx tsc --noEmit`, `npm run lint` (0 errors, 0 warnings), Prisma Client generation, dev server startup, and `npm run build` (Next.js Turbopack) all pass cleanly.

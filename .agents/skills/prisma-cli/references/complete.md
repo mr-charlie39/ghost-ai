@@ -1,6 +1,6 @@
 # prisma complete
 
-Prints a shell completion script.
+Prints a shell completion script. Available starting with Prisma ORM 7.9.
 
 ```bash
 prisma complete zsh

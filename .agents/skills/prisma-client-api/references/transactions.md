@@ -17,6 +17,10 @@ const [user, post] = await prisma.$transaction([
 
 If any operation fails, all are rolled back:
 
+In Prisma 7, a `findUniqueOrThrow()` or `findFirstOrThrow()` failure after a create in a
+sequential transaction does not roll back that earlier write. Use an interactive transaction
+for this dependent-write case.
+
 ```typescript
 try {
   await prisma.$transaction([
@@ -146,13 +150,17 @@ await prisma.$transaction(async (tx) => {
 ### Handle errors
 
 ```typescript
+import { Prisma } from '../generated/client'
+
 try {
   await prisma.$transaction(async (tx) => {
     // operations
   })
 } catch (e) {
-  if (e.code === 'P2002') {
-    // Handle unique constraint violation
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === 'P2002') {
+      // Handle unique constraint violation
+    }
   }
   throw e
 }
