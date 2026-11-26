@@ -11,19 +11,22 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  DEFAULT_NODE_COLOR,
   SHAPE_DEFAULT_SIZES,
   SHAPE_DRAG_DATA_KEY,
   type NodeShape,
   type ShapeDragPayload,
 } from "@/types/canvas";
-import { ShapeVisual } from "@/components/canvas/shape-visual";
 import { cn } from "@/lib/utils";
 
 interface ShapeItem {
   shape: NodeShape;
   label: string;
   icon: LucideIcon;
+}
+
+export interface ShapePanelProps {
+  onShapeDragStart?: (shape: NodeShape, position: { x: number; y: number }) => void;
+  onShapeDragEnd?: () => void;
 }
 
 const SHAPE_ITEMS: readonly ShapeItem[] = [
@@ -35,8 +38,8 @@ const SHAPE_ITEMS: readonly ShapeItem[] = [
   { shape: "hexagon", label: "Hexagon", icon: Hexagon },
 ] as const;
 
-export function ShapePanel() {
-  const previewRefs = React.useRef<Partial<Record<NodeShape, HTMLDivElement | null>>>({});
+export function ShapePanel({ onShapeDragStart, onShapeDragEnd }: ShapePanelProps) {
+  const transparentDragImageRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleDragStart = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>, shape: NodeShape) => {
@@ -51,43 +54,22 @@ export function ShapePanel() {
       event.dataTransfer.setData("text/plain", serialized);
       event.dataTransfer.effectAllowed = "copyMove";
 
-      const previewEl = previewRefs.current[shape];
-      if (previewEl) {
-        event.dataTransfer.setDragImage(previewEl, size.width / 2, size.height / 2);
+      if (transparentDragImageRef.current) {
+        event.dataTransfer.setDragImage(transparentDragImageRef.current, 0, 0);
       }
+
+      onShapeDragStart?.(shape, { x: event.clientX, y: event.clientY });
     },
-    []
+    [onShapeDragStart]
   );
 
   return (
     <>
-      {/* Offscreen exact-shape drag previews so dragging shows the actual canvas shape */}
       <div
+        ref={transparentDragImageRef}
         aria-hidden="true"
-        className="pointer-events-none fixed -left-[9999px] -top-[9999px]"
-      >
-        {SHAPE_ITEMS.map(({ shape }) => {
-          const size = SHAPE_DEFAULT_SIZES[shape];
-          return (
-            <div
-              key={shape}
-              ref={(el) => {
-                previewRefs.current[shape] = el;
-              }}
-              style={{ width: size.width, height: size.height }}
-            >
-              <ShapeVisual
-                shape={shape}
-                width={size.width}
-                height={size.height}
-                fillColor={DEFAULT_NODE_COLOR}
-                strokeColor="#00c8d4"
-                strokeWidth={1.5}
-              />
-            </div>
-          );
-        })}
-      </div>
+        className="pointer-events-none fixed -left-[9999px] -top-[9999px] h-px w-px opacity-0"
+      />
 
       <div
         role="toolbar"
@@ -105,6 +87,7 @@ export function ShapePanel() {
             tabIndex={0}
             draggable
             onDragStart={(event) => handleDragStart(event, shape)}
+            onDragEnd={() => onShapeDragEnd?.()}
             title={`Drag ${label}`}
             aria-label={`Drag ${label} shape`}
             className={cn(

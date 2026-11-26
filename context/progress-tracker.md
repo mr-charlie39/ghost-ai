@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Next feature unit (Shape-specific node visuals, node editing, or edge rendering).
+- Next feature unit (Canvas persistence or AI architecture generation).
 
 ## Completed
 
@@ -220,13 +220,79 @@ Update this file whenever the current phase, active feature, or implementation s
   - Updated `CanvasView` (`<ReactFlow className="ghost-canvas !bg-base">` and `<Background className="!bg-base" color="var(--border-subtle)" />`) to eliminate React Flow dark-mode background mismatch (`#141414` vs `--bg-base`) and ensure a flush, edge-to-edge dotted canvas.
   - Added `pointer-events-none` to `ShapePanel` button icons so SVG elements never intercept HTML5 drag events.
 
+- **Feature 13: Node Shapes & Drag Preview** (`context/feature-specs/13-node-shape.md`)
+  - Updated `components/canvas/shape-visual.tsx` (`ShapeVisual`):
+    - Rendered `rectangle`, `pill`, and `circle` with CSS styling (`rounded-xl` / `rounded-full` borders and fill colors).
+    - Rendered `diamond`, `hexagon`, and `cylinder` with scalable SVG shapes (`width="100%"`, `height="100%"`, `preserveAspectRatio="none"`, `vectorEffect="non-scaling-stroke"`).
+    - Kept borders subtle at rest (`var(--border-default)`) and brighter when selected (`var(--accent-primary)`).
+  - Updated `components/canvas/shape-panel.tsx` (`ShapePanel`) and `components/canvas/canvas-view.tsx` (`CanvasView`):
+    - Added a cursor-attached ghost drag preview using `ShapeVisual` at `SHAPE_DEFAULT_SIZES[shape]` while dragging from the shape panel.
+    - Suppressed the native browser drag image with a 1x1 transparent element and tracked cursor position via `onDragOver`, hiding the preview on `drop` or `dragend`.
+    - Preserved existing collaborative canvas state (`useLiveblocksFlow`) and node creation logic.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on this Node runtime.
+
+- **Feature 14: Node Resizing & Inline Label Editing** (`context/feature-specs/14-node-editing.md`)
+  - Updated `components/canvas/canvas-node.tsx` (`CanvasNodeComponent`):
+    - Added `NodeResizer` from `@xyflow/react` visible when the node is selected (`isVisible={Boolean(selected)}`), enforcing minimum dimensions (`minWidth={80}`, `minHeight={48}`) with subtle dark-UI resize lines (`!border-brand/50`) and handles (`!border-brand !bg-surface`).
+    - Added centered inline label editing triggered by double-clicking the center/label area, showing `"Label"` placeholder text in the same centered position when `data.label` is empty.
+    - Overlaid a `<textarea>` directly over the label span (`absolute inset-0`) with matching typography (`text-center text-sm font-medium leading-snug`) and invisible sizing span to prevent layout shifts while typing.
+    - Wired live label updates to `useReactFlow().updateNodeData(id, { label })` so changes sync through the existing `useLiveblocksFlow` collaborative state.
+    - Closed editing cleanly on `onBlur` or `Escape` key press, and prevented canvas drag/pan/wheel interactions during text editing using `nodrag nopan nowheel` and pointer/mouse `stopPropagation()`.
+  - Preserved shape rendering (`ShapeVisual`), shape panel, drag preview, and node drop creation behavior.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on `app/globals.css`.
+
+- **Feature 15: Node Color Toolbar** (`context/feature-specs/15-node-color-toolbar.md`, `context/feature-specs/16-nodes-color-toolbar.md`)
+  - Extended `CanvasNodeData` in `types/canvas.ts` with optional `textColor?: string` alongside `NODE_COLORS`.
+  - Created `components/canvas/node-color-toolbar.tsx` (`NodeColorToolbar`):
+    - Uses `@xyflow/react`'s `<NodeToolbar>` (`position={Position.Top}`, `offset={12}`) visible only when the node is selected (`isVisible={Boolean(selected)}`) without overlapping the node.
+    - Renders one circular swatch per predefined color pair in `NODE_COLORS`, showing the fill color and paired text color dot.
+    - Highlights the active swatch (`scale-110`, `ring-2 ring-copy-primary/90`) and applies a tight, controlled hover glow based on the pair's text color (`0 0 8px 1px ${pair.text}66`).
+    - Prevents toolbar interactions from dragging nodes or panning the canvas via `nodrag nopan nowheel` and pointer/mouse `stopPropagation()`.
+  - Wired `NodeColorToolbar` into `components/canvas/canvas-node.tsx` (`CanvasNodeComponent`) and exported it from `components/canvas/index.ts`, updating both `color` and `textColor` in `useLiveblocksFlow` via `updateNodeData(id, { color, textColor })` with no server calls.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings).
+
+- **Feature 16: Custom Edge Rendering & Inline Labels** (`context/feature-specs/16-edge-behavior.md`)
+  - Extended `CanvasEdgeData` in `types/canvas.ts` with `label?: string`.
+  - Created `components/canvas/canvas-edge.tsx` (`CanvasEdgeComponent`):
+    - Uses `getSmoothStepPath` for clean right-angle routing (`borderRadius: 8`) and `<BaseEdge interactionWidth={20} />` for a wider invisible hover/click target without increasing visible stroke thickness.
+    - Keeps edges slightly dimmed at rest (`opacity: 0.6`) and brightens them on hover or selection (`opacity: 1`, `var(--text-primary)` / `var(--accent-primary)`).
+    - Implements inline label editing via `EdgeLabelRenderer` positioned at `labelX, labelY` from `getSmoothStepPath`, double-clicking an edge to edit, auto-growing `<input>` via CSS `inline-grid`, saving on blur, `Enter`, or `Escape`, pill badges for saved labels, and a faint `"Add label"` hint when an unlabeled edge is hovered or selected.
+    - Prevents canvas drag/pan/wheel interactions during label clicks and typing via `nodrag nopan nowheel` and `stopPropagation()`, syncing label changes through `useReactFlow().updateEdgeData`.
+  - Updated `components/canvas/canvas-view.tsx` (`CanvasView`) to register `edgeTypes = { canvasEdge: CanvasEdgeComponent }`, configure `defaultEdgeOptions` (light rounded stroke and closed arrowhead), and create `canvasEdge` edges with `handleConnect` through `onEdgesChange` in `useLiveblocksFlow`.
+  - Preserved four-sided loose connection handles (`top`, `right`, `bottom`, `left`) on `CanvasNodeComponent`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings).
+
+- **Feature 17: Canvas Ergonomics (Control Bar & Keyboard Shortcuts)** (`context/feature-specs/17-canvas-ergonomics.md.md`)
+  - Created `components/canvas/canvas-controls.tsx` (`CanvasControls`):
+    - Pill-shaped floating control bar at the bottom-left (`bottom-5 left-5 z-20`) sitting above the shape panel, styled with dark workspace tokens (`bg-surface/90`, `border-surface-border`, `backdrop-blur-md`).
+    - Includes zoom controls (zoom out, fit view, zoom in) and Liveblocks history controls (undo, redo) separated by a thin divider.
+    - Wires zoom actions to the React Flow instance with smooth short animations (`duration: 200`/`250`) and disables/dims undo and redo buttons when `canUndo`/`canRedo` is false.
+  - Created `hooks/useKeyboardShortcuts.ts` (`useKeyboardShortcuts`) and exported it from `hooks/index.ts`:
+    - Listens on `window` for `+`/`=` (zoom in), `-` (zoom out), `Cmd/Ctrl+Z` (undo), and `Cmd/Ctrl+Shift+Z` / `Cmd/Ctrl+Y` (redo).
+    - Ignores shortcuts when focus is inside `<input>`, `<textarea>`, `<select>`, or `contentEditable` elements.
+  - Updated `components/canvas/canvas-view.tsx` (`CanvasView`) to wire Liveblocks `useUndo`, `useRedo`, `useCanUndo`, `useCanRedo`, `useKeyboardShortcuts`, and `<CanvasControls />`, and removed `<MiniMap />` from the bottom of the canvas.
+  - Exported `canvas-controls` from `components/canvas/index.ts`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings).
+
+- **Feature 18: Starter Templates** (`context/feature-specs/18-starter-templates.md`)
+  - Created `components/editor/starter-templates.ts`:
+    - Defined `CanvasTemplate` interface and `CANVAS_TEMPLATES` array with four starter templates (`Microservices Architecture`, `CI/CD Pipeline`, `Event-Driven System`, and `Serverless AI Backend`).
+    - Used shared `CanvasNode` / `CanvasEdge` types, `SHAPE_DEFAULT_SIZES`, and `NODE_COLORS` palette with readable `createTemplateNode` and `createTemplateEdge` helpers.
+  - Created `components/editor/starter-templates-modal.tsx` (`StarterTemplatesModal`):
+    - Implemented a dark-themed dialog (`rounded-3xl`, `bg-surface`, `border-surface-border`) displaying template cards in a scrollable 2-column grid with name, description, node/edge counts, and an Import button that calls `onImport` and closes the modal.
+    - Added lightweight SVG diagram previews (`TemplateDiagramPreview`) fitting each template's node bounds into a fixed viewport, drawing edges between node centers and nodes using their shape and color data without a React Flow instance.
+  - Created `components/editor/template-import-context.tsx` (`TemplateImportProvider`, `useTemplateImport`) and wired starter templates into `components/editor/editor-layout.tsx` and `components/canvas/canvas-view.tsx`:
+    - Added a `Templates` navbar button in `EditorLayout` that opens `StarterTemplatesModal`.
+    - Wired `CanvasFlowInner` to clear existing nodes and edges via `onDelete({ nodes, edges })` and add the selected template's nodes and edges via `onNodesChange` and `onEdgesChange` inside `room.batch(...)`, then fit the view with `reactFlow.fitView`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on `app/globals.css`.
+
 ## In Progress
 
 - Next feature unit preparation.
 
 ## Next Up
 
-- Feature 13: Shape-specific node visuals and node/edge editing.
+- Canvas persistence or AI architecture generation.
 
 ## Open Questions
 

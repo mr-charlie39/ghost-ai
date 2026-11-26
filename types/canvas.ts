@@ -72,13 +72,16 @@ export const DEFAULT_EDGE_COLOR = "#06090C";
 export interface CanvasNodeData extends Record<string, unknown> {
   label: string;
   color?: string;
+  textColor?: string;
   shape?: NodeShape;
 }
 
 /**
  * Edge data payload
  */
-export type CanvasEdgeData = Record<string, unknown>;
+export interface CanvasEdgeData extends Record<string, unknown> {
+  label?: string;
+}
 
 /**
  * Custom node type definition

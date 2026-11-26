@@ -2,12 +2,18 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Folder, Send, Share2, Sparkles, X } from "lucide-react";
+import { Bot, Folder, LayoutTemplate, Send, Share2, Sparkles, X } from "lucide-react";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
 import { EditorHome } from "@/components/editor/editor-home";
 import { ProjectDialogs } from "@/components/editor/project-dialogs";
 import { ShareDialog } from "@/components/editor/share-dialog";
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
+import {
+  TemplateImportProvider,
+  useTemplateImport,
+} from "@/components/editor/template-import-context";
+import type { CanvasTemplate } from "@/components/editor/starter-templates";
 import { Button } from "@/components/ui/button";
 import { useProjectActions } from "@/hooks/use-project-actions";
 import { cn } from "@/lib/utils";
@@ -27,7 +33,15 @@ export interface EditorLayoutProps {
   isOwner?: boolean;
 }
 
-export function EditorLayout({
+export function EditorLayout(props: EditorLayoutProps) {
+  return (
+    <TemplateImportProvider>
+      <EditorLayoutInner {...props} />
+    </TemplateImportProvider>
+  );
+}
+
+function EditorLayoutInner({
   children,
   projectName,
   centerNavbarContent,
@@ -41,14 +55,23 @@ export function EditorLayout({
   isOwner = false,
 }: EditorLayoutProps) {
   const router = useRouter();
+  const templateImport = useTemplateImport();
   const currentActiveId = activeRoomId || activeProjectId;
   const isWorkspace = showWorkspaceActions || Boolean(currentActiveId);
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isAiSidebarOpen, setIsAiSidebarOpen] = React.useState(false);
   const [isShareOpen, setIsShareOpen] = React.useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = React.useState(false);
   const [aiPrompt, setAiPrompt] = React.useState("");
   const [aiStatusMessage, setAiStatusMessage] = React.useState<string | null>(null);
+
+  const handleImportTemplate = React.useCallback(
+    (template: CanvasTemplate) => {
+      templateImport?.requestTemplateImport(template);
+    },
+    [templateImport]
+  );
 
   const handleSendPrompt = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -86,6 +109,19 @@ export function EditorLayout({
       {rightNavbarContent}
       {isWorkspace && (
         <>
+          {/* Starter Templates button that opens StarterTemplatesModal */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsTemplatesOpen(true)}
+            aria-label="Open starter templates"
+            className="h-8 gap-1.5 text-xs text-copy-secondary hover:text-copy-primary hover:bg-subtle cursor-pointer transition-colors"
+          >
+            <LayoutTemplate className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Templates</span>
+          </Button>
+
           {/* Share button that opens ShareDialog */}
           <Button
             type="button"
@@ -309,6 +345,15 @@ export function EditorLayout({
           projectId={currentActiveId}
           projectName={projectName}
           isOwner={isOwner}
+        />
+      )}
+
+      {/* Starter Templates Modal */}
+      {isWorkspace && (
+        <StarterTemplatesModal
+          open={isTemplatesOpen}
+          onOpenChange={setIsTemplatesOpen}
+          onImport={handleImportTemplate}
         />
       )}
     </div>

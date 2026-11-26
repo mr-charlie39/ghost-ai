@@ -31,9 +31,10 @@ export function ShapeVisual({
       const points = `${cx},${pad} ${width - pad},${cy} ${cx},${height - pad} ${pad},${cy}`;
       return (
         <svg
-          width={width}
-          height={height}
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="none"
           className="pointer-events-none block h-full w-full overflow-visible"
           aria-hidden="true"
         >
@@ -43,57 +44,37 @@ export function ShapeVisual({
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
         </svg>
       );
     }
 
     case "circle": {
-      const rx = w / 2;
-      const ry = h / 2;
       return (
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="pointer-events-none block h-full w-full overflow-visible"
+        <div
           aria-hidden="true"
-        >
-          <ellipse
-            cx={width / 2}
-            cy={height / 2}
-            rx={rx}
-            ry={ry}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-          />
-        </svg>
+          className="pointer-events-none h-full w-full rounded-full border transition-colors"
+          style={{
+            backgroundColor: fillColor,
+            borderColor: strokeColor,
+            borderWidth: strokeWidth,
+          }}
+        />
       );
     }
 
     case "pill": {
-      const rx = h / 2;
       return (
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="pointer-events-none block h-full w-full overflow-visible"
+        <div
           aria-hidden="true"
-        >
-          <rect
-            x={pad}
-            y={pad}
-            width={w}
-            height={h}
-            rx={rx}
-            ry={rx}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-          />
-        </svg>
+          className="pointer-events-none h-full w-full rounded-full border transition-colors"
+          style={{
+            backgroundColor: fillColor,
+            borderColor: strokeColor,
+            borderWidth: strokeWidth,
+          }}
+        />
       );
     }
 
@@ -112,9 +93,10 @@ export function ShapeVisual({
       ].join(" ");
       return (
         <svg
-          width={width}
-          height={height}
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="none"
           className="pointer-events-none block h-full w-full overflow-visible"
           aria-hidden="true"
         >
@@ -124,6 +106,7 @@ export function ShapeVisual({
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
           <ellipse
             cx={cx}
@@ -133,6 +116,7 @@ export function ShapeVisual({
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
+            vectorEffect="non-scaling-stroke"
           />
         </svg>
       );
@@ -151,9 +135,10 @@ export function ShapeVisual({
       ].join(" ");
       return (
         <svg
-          width={width}
-          height={height}
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="none"
           className="pointer-events-none block h-full w-full overflow-visible"
           aria-hidden="true"
         >
@@ -163,6 +148,7 @@ export function ShapeVisual({
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
         </svg>
       );
@@ -171,25 +157,15 @@ export function ShapeVisual({
     case "rectangle":
     default: {
       return (
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="pointer-events-none block h-full w-full overflow-visible"
+        <div
           aria-hidden="true"
-        >
-          <rect
-            x={pad}
-            y={pad}
-            width={w}
-            height={h}
-            rx={12}
-            ry={12}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-          />
-        </svg>
+          className="pointer-events-none h-full w-full rounded-xl border transition-colors"
+          style={{
+            backgroundColor: fillColor,
+            borderColor: strokeColor,
+            borderWidth: strokeWidth,
+          }}
+        />
       );
     }
   }
