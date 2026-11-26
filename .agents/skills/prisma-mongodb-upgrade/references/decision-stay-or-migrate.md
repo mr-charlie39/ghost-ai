@@ -26,8 +26,9 @@ Prisma 8 side ([supported databases](https://www.prisma.io/docs/orm/supported-da
 - **Prisma 8 has no MongoDB transaction method yet** — there is no `db.transaction(...)` on
   the MongoDB client. Multi-document atomicity uses the `mongodb` driver's session API on a
   replica set. This skill will be updated when a transaction method ships.
-- Early Access means MongoDB behavior can change between release candidates. Floor:
-  Node.js 22.18+, TypeScript 5.9+, MongoDB 8.0+, and `mongodb@7`.
+- Early Access means MongoDB behavior can change between release candidates. Requirements:
+  Node.js 22.18+ on the 22 line, 24.11+ on the 24 line, or 26+; TypeScript 5.9+ only when the
+  project uses TypeScript; MongoDB 8.0+; and `mongodb@7`.
 
 Prisma v6 side:
 

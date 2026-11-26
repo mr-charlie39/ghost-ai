@@ -85,9 +85,9 @@ written for `@prisma/orm-mongo` 8.0.0-rc.13, and the `prisma-8` skill in
 candidates: **before acting on any Prisma 8 claim, check the installed version**
 (`npm ls @prisma/orm-mongo`) and its synced `prisma-8` skill.
 
-Prisma 8 on MongoDB requires Node.js 22.18+ (24.11+ on the 24 line; 24 recommended),
-TypeScript 5.9+, MongoDB 8.0+, and `mongodb@7` as a peer dependency. The `mongodb@7` driver
-no longer accepts AWS credentials in the connection string.
+Prisma 8 on MongoDB requires Node.js 22.18+ on the 22 line, 24.11+ on the 24 line, or 26+;
+TypeScript 5.9+ only when the project uses TypeScript; MongoDB 8.0+; and `mongodb@7` as a peer
+dependency. The `mongodb@7` driver no longer accepts AWS credentials in the connection string.
 
 ## Hand-off rule
 

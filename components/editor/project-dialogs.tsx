@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AlertTriangle, Hash } from "lucide-react";
 import { DialogPattern } from "@/components/editor/dialog-pattern";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export interface CreateProjectDialogProps {
   roomIdPreview?: string;
   onSubmit: (e?: React.FormEvent) => void;
   isLoading?: boolean;
+  errorMessage?: string | null;
 }
 
 export function CreateProjectDialog({
@@ -30,6 +32,7 @@ export function CreateProjectDialog({
   roomIdPreview,
   onSubmit,
   isLoading = false,
+  errorMessage,
 }: CreateProjectDialogProps) {
   const displayPreview = roomIdPreview || slugPreview || "untitled-project";
 
@@ -68,6 +71,7 @@ export function CreateProjectDialog({
       }
     >
       <form id="create-project-form" onSubmit={handleSubmit} className="space-y-4">
+        {errorMessage && <p role="alert" className="text-xs text-state-error">{errorMessage}</p>}
         <div className="space-y-1.5">
           <label
             htmlFor="create-project-name"
@@ -87,7 +91,10 @@ export function CreateProjectDialog({
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium text-copy-muted">Room ID Preview</span>
+          <label className="text-xs font-medium text-copy-muted flex items-center gap-1.5">
+            <Hash className="h-3 w-3 text-brand" />
+            <span>Room ID Preview</span>
+          </label>
           <div className="flex items-center gap-2 rounded-xl border border-surface-border bg-base px-3 py-2 text-xs">
             <span className="font-mono text-brand font-medium">
               {displayPreview}
@@ -111,6 +118,7 @@ export interface RenameProjectDialogProps {
   targetProject: ProjectItem | null;
   onSubmit: (e?: React.FormEvent) => void;
   isLoading?: boolean;
+  errorMessage?: string | null;
 }
 
 export function RenameProjectDialog({
@@ -121,6 +129,7 @@ export function RenameProjectDialog({
   targetProject,
   onSubmit,
   isLoading = false,
+  errorMessage,
 }: RenameProjectDialogProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -174,6 +183,7 @@ export function RenameProjectDialog({
       }
     >
       <form id="rename-project-form" onSubmit={handleSubmit} className="space-y-4">
+        {errorMessage && <p role="alert" className="text-xs text-state-error">{errorMessage}</p>}
         <div className="space-y-1.5">
           <label
             htmlFor="rename-project-name"
@@ -212,6 +222,7 @@ export interface DeleteProjectDialogProps {
   targetProject: ProjectItem | null;
   onSubmit: () => void;
   isLoading?: boolean;
+  errorMessage?: string | null;
 }
 
 export function DeleteProjectDialog({
@@ -220,6 +231,7 @@ export function DeleteProjectDialog({
   targetProject,
   onSubmit,
   isLoading = false,
+  errorMessage,
 }: DeleteProjectDialogProps) {
   return (
     <DialogPattern
@@ -254,10 +266,14 @@ export function DeleteProjectDialog({
         </>
       }
     >
-      {/* Destructive confirmation only - no input fields */}
-      <p className="text-xs text-copy-muted">
-        All architecture diagrams, specs, and collaborator data associated with this project will be permanently removed.
-      </p>
+      {/* Destructive confirmation warning box */}
+      <div className="flex items-start gap-2.5 rounded-xl border border-state-error/30 bg-state-error/10 p-3 text-xs text-state-error">
+        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+        <span className="leading-relaxed">
+          All architecture diagrams, specs, and collaborator data associated with this project will be permanently removed.
+        </span>
+      </div>
+      {errorMessage && <p role="alert" className="text-xs text-state-error">{errorMessage}</p>}
     </DialogPattern>
   );
 }
@@ -287,6 +303,7 @@ export interface ProjectDialogsProps {
   onSubmitDelete: () => void;
 
   isLoading?: boolean;
+  mutationError?: string | null;
 }
 
 export function ProjectDialogs({
@@ -310,6 +327,7 @@ export function ProjectDialogs({
   onSubmitDelete,
 
   isLoading = false,
+  mutationError,
 }: ProjectDialogsProps) {
   return (
     <>
@@ -322,6 +340,7 @@ export function ProjectDialogs({
         roomIdPreview={roomIdPreview}
         onSubmit={onSubmitCreate}
         isLoading={isLoading}
+        errorMessage={mutationError}
       />
 
       <RenameProjectDialog
@@ -332,6 +351,7 @@ export function ProjectDialogs({
         targetProject={targetProject}
         onSubmit={onSubmitRename}
         isLoading={isLoading}
+        errorMessage={mutationError}
       />
 
       <DeleteProjectDialog
@@ -340,6 +360,7 @@ export function ProjectDialogs({
         targetProject={targetProject}
         onSubmit={onSubmitDelete}
         isLoading={isLoading}
+        errorMessage={mutationError}
       />
     </>
   );

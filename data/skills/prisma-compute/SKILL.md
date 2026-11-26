@@ -1,6 +1,6 @@
 ---
 name: prisma-compute
-description: Deploy and operate apps on Prisma Compute with the Prisma 8 CLI. Use whenever the user mentions Prisma Compute, deploying or hosting a Prisma app, `prisma deploy`, `prisma dev module.ts`, Prisma Composer apps (`module.ts`, `compute()`, the `composer` section of `prisma.config.ts`), preview stages, deploy on push (`prisma git connect`, `prisma/cloud-deploy-action`), `prisma service` logs, versions, rollback, or custom domains, `project env`, `PRISMA_SERVICE_TOKEN`, regions, 504s, sleeping instances, or `waitUntil`; also when a project still uses the removed `@prisma/cli app deploy`, `prisma.compute.ts`, `defineComputeConfig`, `compute:deploy`, or `build logs` surface.
+description: Deploy and operate apps on Prisma Compute with the Prisma 8 CLI. Use whenever the user mentions Prisma Compute, deploying or hosting a Prisma app, `prisma deploy`, `prisma dev`, Prisma Composer apps (`module.ts`, `compute()`, the `composer` section of `prisma.config.ts`), preview environments, deploy on push (`prisma git connect`, `prisma/cloud-deploy-action`), `prisma service` logs, versions, rollback, or custom domains, `project env`, `PRISMA_SERVICE_TOKEN`, regions, 504s, sleeping instances, or `waitUntil`; also when a project still uses the removed `@prisma/cli app deploy`, `prisma.compute.ts`, `defineComputeConfig`, `compute:deploy`, or `build logs` surface.
 license: MIT
 metadata:
   author: prisma
@@ -28,12 +28,12 @@ The Compute CLI from before Composer is gone. Its commands fail with `CLI.UNKNOW
 
 | Removed | Use instead |
 |---------|-------------|
-| `@prisma/cli app deploy`, `app build`, `app run` | Your own build script, then `npx prisma deploy module.ts`; `npx prisma dev module.ts` to run locally |
+| `@prisma/cli app deploy`, `app build`, `app run` | Your own build script, then `npx prisma deploy`; `npx prisma dev` to run locally. Set the entry in `prisma.config.ts` |
 | `prisma.compute.ts`, `prisma.compute.json`, `defineComputeConfig` | `module.ts`, a `service.ts` per server declared with `compute()`, and the `composer` section of `prisma.config.ts` |
 | `init` writing a compute config | `npx prisma init` now writes a `prisma.config.ts` with only a `skills` section, adds `prisma` as a dev dependency, and syncs skills. Add the `composer` section yourself |
-| `compute:deploy` script | `npx prisma deploy module.ts`, or the `deploy` script current `create-prisma` generates |
-| `app deploy --branch <name>` | `npx prisma deploy module.ts --stage <name>` |
-| `app deploy --prod`, `--no-promote`, `app promote` | No `--stage` deploys production; `service version promote <version-id>` |
+| `compute:deploy` script | `npx prisma deploy`, or the `deploy` script current `create-prisma` generates |
+| `app deploy --branch <name>` | `npx prisma deploy --environment <name>` |
+| `app deploy --prod`, `--no-promote`, `app promote` | No `--environment` deploys production; `service version promote <version-id>` |
 | `app show`, `app open`, `app list-deploys`, `app show-deploy` | `service show <service>`, `service open <service>`, `service version list <service>`, `service version show <version-id>` |
 | `app logs` | `service logs <service>` |
 | `app rollback --to <id> --yes` | `service version rollback <service> --to <id> --confirm <id>` |
@@ -99,9 +99,9 @@ A repository with `prisma.compute.ts` or a `compute:deploy` script was set up fo
 
 ### 4. Deploy (HIGH)
 
-- `deploy-build-first` - `deploy` and `dev` do not build. Run the build, then `npx prisma deploy module.ts`.
-- `deploy-dev-first` - `npx prisma dev module.ts` runs the whole app locally with no credentials. Verify each local URL before deploying.
-- `deploy-production-intent` - A deploy without `--stage`, and a push to the default branch of a connected repository, change production. Get the user's go-ahead first; use `--stage <name>` for previews.
+- `deploy-build-first` - `deploy` and `dev` do not build. Run the build, then `npx prisma deploy`.
+- `deploy-dev-first` - `npx prisma dev` runs the whole app locally with no credentials. Verify each local URL before deploying.
+- `deploy-production-intent` - A deploy without `--environment`, and a push to the default branch of a connected repository, change production. Get the user's go-ahead first; use `--environment <name>` for previews.
 - `deploy-auth` - On a workstation the user runs `npx prisma auth login` (browser). In CI set `PRISMA_SERVICE_TOKEN` and `PRISMA_WORKSPACE_ID`. Check `npx prisma auth whoami --json` (`envelope.result.authenticated`, `envelope.result.workspace`) before deploying.
 - `deploy-link-after` - `deploy` finds or creates the project by the root module name (or `--name`) and does not write `.prisma/local.json`. Run `npx prisma project link <app-name>` afterwards, or pass `--project`, before `service`, `git`, or `project env` commands.
 - `deploy-on-push` - Deploy on push needs both `npx prisma git connect` (interactive) and a workflow running `prisma/cloud-deploy-action@v1`. Connecting alone deploys nothing.
@@ -131,16 +131,15 @@ A repository with `prisma.compute.ts` or a `compute:deploy` script was set up fo
 ## Preferred Workflow
 
 1. Inspect `package.json` (is `prisma` 8.x a dev dependency, are `@prisma/composer` and `@prisma/composer-prisma-cloud` installed?), `module.ts`, `prisma.config.ts`, the build script, and leftovers from the removed flow (`prisma.compute.ts`, `compute:deploy`).
-2. Install what is missing and sync the package skills. In an existing project, pin the Composer packages with `--save-exact` to the version that matches the installed `prisma` and `@prisma/orm-postgres` (see [`deploy-existing-app.md`](references/deploy-existing-app.md)); unpinned installs take the latest release, which may not work with them:
+2. Install what is missing and sync the package skills. In an existing project, pin both Composer packages with `--save-exact` to the version compatible with the already-installed `prisma` and `@prisma/orm-postgres` (see [`deploy-existing-app.md`](references/deploy-existing-app.md)). Do not replace or upgrade `prisma` as part of this step. For `prisma@8.0.0-rc.27` with `@prisma/orm-postgres@8.0.0-rc.20`, the documented pair is:
    ```bash
-   npm install @prisma/composer @prisma/composer-prisma-cloud
-   npm install -D prisma
+   npm install --save-exact @prisma/composer@0.34.0 @prisma/composer-prisma-cloud@0.34.0
    npx prisma skills sync
    ```
 3. Declare or port the app: [`app-composer-setup.md`](references/app-composer-setup.md) and [`app-framework-builds.md`](references/app-framework-builds.md).
-4. Build, run `npx prisma dev module.ts`, and request each local URL it prints.
+4. Ensure the `composer` section of `prisma.config.ts` names the entry (`entry: "./module.ts"`). Build, run `npx prisma dev`, and request each local URL it prints.
 5. Run `npx prisma auth whoami --json`. If `envelope.result.authenticated` is `false`, ask the user to run `npx prisma auth login`.
-6. Deploy a preview with `npm run build && npx prisma deploy module.ts --stage <name> --json`, or production without `--stage` once the user confirms. A new project needs a region.
+6. Deploy a preview with `npm run build && npx prisma deploy --environment <name> --json`, or production with `npm run build && npx prisma deploy --json` once the user confirms. A new project needs a region.
 7. Request each printed URL, then `npx prisma project link <app-name>` and `npx prisma service list --json` (add `--branch <stage>` for a preview).
 8. Report the app name, stage, service ids, URLs, and database ids. Never report secret values.
 

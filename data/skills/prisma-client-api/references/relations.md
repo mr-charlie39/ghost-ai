@@ -87,7 +87,7 @@ const user = await prisma.user.create({
 ### Create or connect
 
 ```typescript
-const post = await prisma.post.create({
+const postWithNestedAuthor = await prisma.post.create({
   data: {
     title: 'New Post',
     author: {
@@ -103,7 +103,7 @@ const post = await prisma.post.create({
 ### Connect existing
 
 ```typescript
-const post = await prisma.post.create({
+const postWithConnect = await prisma.post.create({
   data: {
     title: 'New Post',
     author: {
@@ -113,7 +113,7 @@ const post = await prisma.post.create({
 })
 
 // Shorthand for foreign key
-const post = await prisma.post.create({
+const postWithForeignKey = await prisma.post.create({
   data: {
     title: 'New Post',
     authorId: 1

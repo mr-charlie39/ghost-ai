@@ -216,13 +216,15 @@ Pagination:
 // First page
 const users = await prisma.user.findMany({
   take: 10,
-  skip: 0
+  skip: 0,
+  orderBy: { id: 'asc' }
 })
 
 // Second page
 const users = await prisma.user.findMany({
   take: 10,
-  skip: 10
+  skip: 10,
+  orderBy: { id: 'asc' }
 })
 ```
 
@@ -247,13 +249,16 @@ const firstPage = await prisma.user.findMany({
   orderBy: { id: 'asc' }
 })
 
-// Next page using cursor
-const nextPage = await prisma.user.findMany({
-  take: 10,
-  skip: 1,  // Skip the cursor record
-  cursor: { id: firstPage[firstPage.length - 1].id },
-  orderBy: { id: 'asc' }
-})
+// Next page using cursor; an empty first page has no cursor.
+const nextPage =
+  firstPage.length === 0
+    ? []
+    : await prisma.user.findMany({
+        take: 10,
+        skip: 1, // Skip the cursor record
+        cursor: { id: firstPage[firstPage.length - 1].id },
+        orderBy: { id: 'asc' }
+      })
 ```
 
 ## distinct

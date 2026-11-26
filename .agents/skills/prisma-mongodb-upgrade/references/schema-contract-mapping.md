@@ -27,9 +27,9 @@ you need what v6 syntax cannot express, such as polymorphism.
 | v6 concept | Prisma 8 equivalent | Notes |
 |------------|------------------------|-------|
 | (nothing) | `// use prisma-8` as the first line of `contract.prisma` | Without it, `contract emit` fails with `CONTRACT.SOURCE_LOAD_FAILED` |
-| `datasource db { provider = "mongodb" }` + `url = env(...)` ([v6 docs](https://www.prisma.io/docs/orm/overview/databases/mongodb#example)) | No provider in the contract. `prisma.config.ts` wraps `defineConfig` from `@prisma/orm-mongo/config` in `definePrismaConfig`, with `db.connection` | `prisma orm init --target mongodb` scaffolds it; point the connection at the same database v6 uses |
+| `datasource db { provider = "mongodb" }` + `url = env(...)` ([v6 docs](https://www.prisma.io/docs/orm/overview/databases/mongodb#example)) | No provider in the contract. `prisma.config.ts` wraps `defineConfig` from `@prisma/orm-mongo/config` in `definePrismaConfig`, with `db.connection` | For a new Prisma 8 setup, `prisma orm init --target mongodb --authoring psl` scaffolds it. In an existing Prisma 6 project, keep the v6 CLI under the `prisma6` package alias (`npm:prisma@6.19.x`) and give it a separate v6 config file; keep Prisma 8's config separate so v6 commands do not read the incompatible Prisma 8 config. Point both at the same database |
 | `id String @id @default(auto()) @map("_id") @db.ObjectId` ([using ObjectId](https://www.prisma.io/docs/orm/overview/databases/mongodb#using-objectid)) | `id ObjectId @id @map("_id")` | |
-| `Int`, `Float`, `Boolean`, `DateTime` | `Int32`, `Double`, `Bool`, `Date` | The v6 names still work with a `PSL_DEPRECATED_SCALAR_NAME` warning; a later release removes them |
+| `Int`, `Float`, `Boolean`, `DateTime` | `Int64Number`, `Double`, `Bool`, `Date` | `Int64Number` preserves the BSON long representation used by v6 `Int` fields; do not map them to `Int32` |
 | `BigInt`, `Decimal`, `Bytes`, `Json` | `Int64`, `Decimal128`, `Binary`, `Json` | `Json` holds only JSON values; type a field that holds other BSON values, such as a `Date`, as `Bson` |
 | `@default(now())`, `@updatedAt` | `temporal.createdAt()`, `temporal.updatedAt()` | |
 | Composite types: `type Address { ... }` ([composite types](https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/composite-types)) | `type Address { ... }` | Unchanged |

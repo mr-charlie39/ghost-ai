@@ -11,7 +11,8 @@ prisma studio [options]
 ## What It Does
 
 - Starts a web-based database GUI
-- View all your models and records
+- View database tables and records. Models using `@@map` appear under their mapped database
+  table names, so look for the table name rather than the Prisma model name.
 - Create, update, and delete records
 - Filter and sort data
 - Navigate relations
@@ -20,7 +21,7 @@ prisma studio [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--port` / `-p` | Port to start Studio on | `5555` |
+| `--port` / `-p` | Port to start Studio on; if unavailable, Studio may choose another port | `51212` |
 | `--browser` / `-b` | Browser to open Studio in | System default |
 | `--config` | Custom path to your Prisma config file | - |
 | `--url` | Database connection string (overrides the one in your Prisma config) | - |
@@ -33,7 +34,8 @@ prisma studio [options]
 prisma studio
 ```
 
-Opens at http://localhost:5555
+Studio starts on port 51212 by default and may choose another available port. Open the URL
+printed by Prisma.
 
 ### Custom port
 
@@ -112,22 +114,13 @@ Some recent builds also expose AI-assisted SQL authoring. Treat these as interac
 
 ## Common Workflow
 
-1. Run migrations:
-   ```bash
-   prisma migrate dev
-   ```
-
-2. Seed data:
-   ```bash
-   prisma db seed
-   ```
-
-3. Open Studio to verify:
+1. Open Studio directly to inspect the configured database. Migrations and seeding are
+   separate workflows, not prerequisites:
    ```bash
    prisma studio
    ```
 
-4. Make manual edits if needed
+2. Make manual edits if needed
 
 ## Security Note
 

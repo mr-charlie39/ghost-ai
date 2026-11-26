@@ -73,7 +73,7 @@ prisma generate --sql
 ```prisma
 generator client {
   provider = "prisma-client"
-  output   = "../generated"
+  output   = "../generated/prisma"
 }
 ```
 
@@ -90,6 +90,16 @@ generator client {
 import { PrismaClient } from '../generated/prisma/client'
 ```
 
+With the schema at `prisma/schema.prisma` and output `../generated/prisma`, the generated
+directory is `<project-root>/generated/prisma`. From `src/index.ts`, import generated
+modules directly from that directory:
+
+```typescript
+import { PrismaClient } from '../generated/prisma/client'
+import { Prisma } from '../generated/prisma/client'
+import type { UserModel } from '../generated/prisma/models/User'
+```
+
 ### Compiler Build Tuning
 
 Use `compilerBuild` when you need to trade artifact size against the default build:
@@ -97,7 +107,7 @@ Use `compilerBuild` when you need to trade artifact size against the default bui
 ```prisma
 generator client {
   provider      = "prisma-client"
-  output        = "../generated"
+  output        = "../generated/prisma"
   compilerBuild = "small"
 }
 ```
@@ -130,7 +140,7 @@ Run before building your application.
 ```prisma
 generator client {
   provider = "prisma-client"
-  output   = "../generated"
+  output   = "../generated/prisma"
 }
 
 generator zod {
@@ -145,10 +155,11 @@ prisma generate  # Runs all generators
 
 ## Output Structure
 
-After running `prisma generate`, your output directory contains:
+With the schema at `prisma/schema.prisma`, `output = "../generated/prisma"` writes to
+`<project-root>/generated/prisma`. After running `prisma generate`, that directory contains:
 
 ```
-generated/
+generated/prisma/
 ├── browser.ts
 ├── client.ts
 ├── commonInputTypes.ts

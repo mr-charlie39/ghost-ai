@@ -39,7 +39,7 @@ Reference this skill when:
 - `prisma-config` - creating and using `prisma.config.ts`
 - `env-variables` - explicit environment loading
 - `removed-features` - removed middleware, metrics, and legacy CLI behavior
-- `accelerate-users` - migration notes for Accelerate users
+- `accelerate-users` - migration off Accelerate, which is scheduled to retire December 1, 2026
 
 ## Using MongoDB? This guide does not apply
 

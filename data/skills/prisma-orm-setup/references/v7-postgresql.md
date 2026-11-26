@@ -74,7 +74,11 @@ Use a driver adapter for the standard SQL workflow.
    import { PrismaClient } from '../generated/client'
    import { PrismaPg } from '@prisma/adapter-pg'
 
-   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   const connectionString = process.env.DATABASE_URL
+   if (!connectionString) throw new Error('DATABASE_URL is not set')
+
+   const schema = new URL(connectionString).searchParams.get('schema') ?? 'public'
+   const adapter = new PrismaPg({ connectionString }, { schema })
    const prisma = new PrismaClient({ adapter })
    ```
 

@@ -116,6 +116,22 @@ datasource db {
 }
 ```
 
+When using `@prisma/adapter-mariadb` with PlanetScale, configure TLS explicitly. A connection
+string by itself does not enable TLS for this adapter:
+
+```typescript
+const adapter = new PrismaMariaDb({
+  host: process.env.MYSQL_HOST,
+  port: 3306,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  ssl: true,
+})
+```
+
+Set `MYSQL_HOST` to the PlanetScale host. Keep foreign-key settings consistent with the database.
+
 ## Common Issues
 
 ### "Too many connections"

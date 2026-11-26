@@ -54,15 +54,29 @@ Environment variable values are write-only: no endpoint returns them. Do not log
 `@prisma/composer/control` runs the CLI's operations in-process and returns `{ ok: true, value }` or `{ ok: false, failure }` with a dotted `failure.code`:
 
 ```ts
-import { deploy } from "@prisma/composer/control";
+import { deploy, destroy } from "@prisma/composer/control";
 import prismaConfig from "./prisma.config.ts";
 
 const result = await deploy({
-  entry: "module.ts",
   config: { value: prismaConfig.composer, file: "prisma.config.ts" },
-  stage: "pr-42",
+  environment: "pr-42",
 });
 if (!result.ok) throw new Error(`${result.failure.code}: ${result.failure.message}`);
+```
+
+The `composer` section in `prisma.config.ts` must set `entry` to the root module. Pass
+`environment: "pr-42"` to deploy to that preview rather than relying on the production default.
+
+To destroy a preview, explicitly request the separate operation:
+
+```ts
+import { destroy } from "@prisma/composer/control";
+import prismaConfig from "./prisma.config.ts";
+
+const result = await destroy({
+  config: { value: prismaConfig.composer, file: "prisma.config.ts" },
+  environment: "pr-42",
+});
 ```
 
 - Operations: `deploy`, `destroy`, `dev`, `log`. `config` is required in 0.28.0.
@@ -90,7 +104,7 @@ This creates an app outside any Composer declaration, through deprecated endpoin
 
 ## Good
 
-Deploy with `prisma deploy module.ts` or the control API, and read the result back with `GET /v1/services?projectId=...` and `GET /v1/deployments/{deploymentId}/logs`.
+Deploy with `prisma deploy` (the entry is configured in `prisma.config.ts`) or the control API, and read the result back with `GET /v1/services?projectId=...` and `GET /v1/deployments/{deploymentId}/logs`.
 
 ## References
 

@@ -26,7 +26,7 @@ Reference this skill when:
 - Managing database state (`prisma db push/pull`)
 - Using local development database (`prisma dev`)
 - Debugging Prisma issues (`prisma debug`)
-- Generating shell completions (`prisma complete`)
+- Generating shell completions (`prisma complete`, available in Prisma 7.9 and later)
 
 ## Rule Categories by Priority
 
@@ -183,7 +183,7 @@ prisma validate
 # Format schema
 prisma format
 
-# Generate shell completion code
+# Generate shell completion code (Prisma 7.9+)
 prisma complete zsh
 ```
 

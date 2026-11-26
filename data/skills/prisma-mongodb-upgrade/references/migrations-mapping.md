@@ -22,9 +22,9 @@ history on disk.
 
 ## Prisma 8: bring the existing database under management
 
-The database already has collections and data, so bootstrap it with `db update`. It diffs the
-live database against the contract, applies the difference (strict validators, plus indexes
-the contract declares that v6 never created), and signs the database:
+The database already has collections and data, so bootstrap it with `db update`. When the
+contract comes from `prisma6Schema(...)`, this applies declared indexes but adds no validators.
+It then signs the database:
 
 ```bash
 npx prisma contract emit
@@ -36,6 +36,11 @@ npx prisma db update --db "$DATABASE_URL" --advance-ref db
 
 **Do not use `db init` here.** It only applies additive changes, and adding a validator to a
 collection with existing documents counts as destructive, so it refuses.
+
+After the Prisma 8 client is cut over, port the schema to an explicit contract, then use
+`migration plan` and `db migrate` to add the intended validators. Test the validator migration
+on a copy first and keep validators compatible with Prisma 6 writes throughout the rollback
+window; otherwise prepare and test a procedure to roll them back before restoring v6.
 
 ## Prisma 8: every later schema change
 

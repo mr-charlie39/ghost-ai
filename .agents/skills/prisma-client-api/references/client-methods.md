@@ -117,11 +117,14 @@ prisma.$log('Hello!')
 ### Add model methods
 
 ```typescript
+import { Prisma } from '../generated/client'
+
 const prisma = new PrismaClient({ adapter }).$extends({
   model: {
     user: {
       async findByEmail(email: string) {
-        return prisma.user.findUnique({ where: { email } })
+        const context = Prisma.getExtensionContext(this)
+        return context.findUnique({ where: { email } })
       }
     }
   }
@@ -162,7 +165,7 @@ const prisma = new PrismaClient({ adapter }).$extends({
   }
 })
 
-const user = await prisma.user.findFirst()
+const user = await prisma.user.findFirstOrThrow()
 console.log(user.fullName) // Computed field
 ```
 

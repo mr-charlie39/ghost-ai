@@ -1,6 +1,10 @@
-# Prisma Accelerate Users
+# Existing Prisma Accelerate Users
 
-Special migration instructions for users of Prisma Accelerate or Prisma Postgres with `prisma://` or `prisma+postgres://` URLs.
+Prisma Accelerate is scheduled to retire on December 1, 2026. Do not treat it as an ongoing
+setup recommendation for new Prisma 7 apps. Existing users should follow Prisma's
+[official removal and migration guide](https://www.prisma.io/docs/accelerate/keep-your-database)
+and move to a direct database connection before retirement; caching behavior provided by
+Accelerate will not remain after the service is removed.
 
 ## Important
 
@@ -8,7 +12,7 @@ Special migration instructions for users of Prisma Accelerate or Prisma Postgres
 
 Driver adapters (like `PrismaPg`) expect direct database connection strings. They will fail with `prisma://` or `prisma+postgres://` URLs.
 
-## Correct v7 Setup for Accelerate
+## Existing deployments before retirement
 
 ### 1. Keep your Accelerate URL
 
@@ -62,25 +66,14 @@ const adapter = new PrismaPg({
 })
 ```
 
-## Migrations with Accelerate
+## Migrations
 
-For migrations, you may need a direct database connection:
-
-### Option 1: Use Accelerate URL for everything
-
-Accelerate URLs work with Prisma CLI commands:
-
-```bash
-# Works with Accelerate URL
-prisma migrate deploy
-prisma db push
-```
-
-### Option 2: Use direct URL for migrations
+Prisma CLI migration commands require a direct database connection. Configure the migration
+URL separately from the runtime Accelerate URL:
 
 ```env
-DATABASE_URL="prisma+postgres://..."  # For app
-DIRECT_DATABASE_URL="postgresql://..."  # For migrations
+DATABASE_URL="prisma+postgres://..."   # Existing app runtime, until migration
+DIRECT_DATABASE_URL="postgresql://..." # Direct database connection for migrations
 ```
 
 ```typescript
@@ -107,9 +100,10 @@ export const prisma = new PrismaClient({
 }).$extends(withAccelerate())
 ```
 
-## Switching Away from Accelerate
+## Moving to a direct connection
 
-If you later switch to direct TCP connection:
+Before the retirement date, replace the Accelerate client with a provider-appropriate driver
+adapter and point it at the direct connection:
 
 ```typescript
 // Change from accelerateUrl to adapter
@@ -117,35 +111,11 @@ import { PrismaClient } from '../generated/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL  // Direct postgres:// URL
+  connectionString: process.env.DIRECT_DATABASE_URL  // Direct postgres:// URL
 })
 
 export const prisma = new PrismaClient({ adapter })
 ```
 
-## Caching with Accelerate
-
-The extension enables caching:
-
-```typescript
-const users = await prisma.user.findMany({
-  cacheStrategy: {
-    ttl: 60,  // Cache for 60 seconds
-    swr: 120, // Stale-while-revalidate for 120 seconds
-  },
-})
-```
-
-## Edge Runtime
-
-Accelerate works great in edge runtimes:
-
-```typescript
-// Works in Vercel Edge, Cloudflare Workers, etc.
-import { PrismaClient } from '../generated/client'
-import { withAccelerate } from '@prisma/extension-accelerate'
-
-export const prisma = new PrismaClient({
-  accelerateUrl: process.env.DATABASE_URL,
-}).$extends(withAccelerate())
-```
+Review application code that uses `cacheStrategy`; migrate or remove that behavior as part of
+the transition because Accelerate caching will not be available after retirement.

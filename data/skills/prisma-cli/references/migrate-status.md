@@ -59,7 +59,9 @@ To apply migrations in production, run:
 
 ## Exit Codes
 
-- `0`: Success (may have pending migrations, but command ran successfully)
-- `1`: Error
+- `0`: No pending migrations and no detected error
+- `1`: Pending migrations or an error, including connection errors, divergent history,
+  missing migration history, or failed migrations
 
-To check for pending migrations programmatically, you might need to parse the output or use `migrate diff` with exit code flags.
+Prisma 7 uses code `1` for both pending migrations and other errors. Inspect the command
+output to distinguish these cases when needed; pending migrations do not return code `0`.

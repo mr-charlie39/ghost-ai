@@ -154,4 +154,12 @@ When ready for production, switch to Prisma Postgres cloud:
 prisma init --db
 ```
 
-Update your `DATABASE_URL` to the cloud connection string.
+If local data must be retained, transfer it to the cloud database and verify the imported
+data before switching the application. Then update `DATABASE_URL` to the cloud connection
+string and apply pending migrations before starting the application:
+
+```bash
+prisma migrate deploy
+```
+
+Confirm the migration command targets the cloud database configured by `DATABASE_URL`.

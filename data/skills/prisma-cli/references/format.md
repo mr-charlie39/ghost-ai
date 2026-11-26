@@ -46,3 +46,6 @@ Most Prisma editor extensions (VS Code, WebStorm) run `prisma format` automatica
 - CI pipelines (check formatting)
 - CLI-based workflows
 - Fixing large schema refactors
+
+In CI, use `prisma format --check` to detect formatting differences without rewriting the
+schema.

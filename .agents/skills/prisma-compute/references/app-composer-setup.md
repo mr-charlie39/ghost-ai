@@ -17,12 +17,17 @@ CRITICAL
 - The packages:
 
 ```bash
-npm install @prisma/composer @prisma/composer-prisma-cloud
-npm install -D prisma
+npm install --save-exact @prisma/composer@0.34.0 @prisma/composer-prisma-cloud@0.34.0
 npx prisma skills sync
 ```
 
-`@prisma/composer` pins its own `effect` version; do not add a different `effect` to the app. See [`debug-deploy-failures.md`](debug-deploy-failures.md) if `prisma.config.ts` fails to evaluate.
+In an existing project, install the Composer packages with `--save-exact` at versions compatible
+with the already-installed `prisma` and `@prisma/orm-postgres`. The example above is for
+`prisma@8.0.0-rc.27` and `@prisma/orm-postgres@8.0.0-rc.20`; use the versions in the matching
+setup pull request for other releases. Do not replace the installed Prisma CLI as part of
+Composer setup. `@prisma/composer` pins its own `effect` version; do not add a different `effect`
+to the app. See [`debug-deploy-failures.md`](debug-deploy-failures.md) if `prisma.config.ts`
+fails to evaluate.
 
 ## The Four Files
 
@@ -68,6 +73,7 @@ import { definePrismaConfig } from "prisma/config";
 
 export default definePrismaConfig({
   composer: composer({
+    entry: "./module.ts",
     extensions: [prismaCloud({ region: "us-east-1" }), nodeBuild()],
     state: prismaState(),
   }),
@@ -87,7 +93,8 @@ And a build script in `package.json` that produces the file `entry` points at:
 Rules:
 
 - `entry` and `dir` resolve relative to the service module (`module: import.meta.url`), not the project root.
-- The `composer` section accepts only `extensions` and `state`. Add `nextjsBuild()` from `@prisma/composer/nextjs/control` when a service uses the `nextjs` adapter.
+- Set the module entry in the `composer` section. Run `npx prisma dev` and `npx prisma deploy --environment <name>` without positional entry arguments.
+- Add `nextjsBuild()` from `@prisma/composer/nextjs/control` when a service uses the `nextjs` adapter.
 - `prisma.config.ts` is read by the CLI only; app code never imports it. A separate `prisma-composer.config.ts` is refused.
 - Inside the module graph, write relative imports with explicit `.ts` extensions and enable `allowImportingTsExtensions` in `tsconfig.json`.
 
@@ -148,7 +155,7 @@ Buckets work the same way: `bucket()` from the package root, delivering `{ url, 
 
 ## Configuration and Secrets
 
-Composer services do not read `process.env`. Declare the service's configuration as an input schema, and bind each field at `provision()` to a literal, `envParam("NAME")`, or `envSecret("NAME")`. The named values live in the stage's platform environment variables (`project env`). A deploy copies a missing name from the deploying shell and fails early, naming the variable, when neither has it. See [Service input](https://www.prisma.io/docs/composer/service-input).
+Composer services do not read `process.env`. Declare the service's configuration as an input schema, and bind each field at `provision()` to a literal, `envParam("NAME")`, or `envSecret("NAME")`. With current Composer behavior, each `envParam`/`envSecret` value must be supplied from the deploy-time shell or config on every deploy; a value previously seeded in the platform environment (`project env`) does not replace that input. CI must provide each value every time. See [Service input](https://www.prisma.io/docs/composer/service-input).
 
 ## Porting From `prisma.compute.ts`
 
@@ -161,7 +168,7 @@ Composer services do not read `process.env`. Declare the service's configuration
 | `env` file | Platform env vars through `project env add --file`, bound with `envParam`/`envSecret`; a database becomes a declared dependency |
 | `region` | `prismaCloud({ region })`, used only when the first deploy creates the project |
 | `apps` (monorepo) | One `compute()` per deployable app, all provisioned in one `module.ts` |
-| `--branch <name>` on deploy | `deploy --stage <name>` |
+| `--branch <name>` on deploy | `deploy --environment <name>` |
 
 Then delete `prisma.compute.ts`, the `compute:deploy` script, and the `@prisma/compute-sdk` dev dependency if nothing else imports it. `.prisma/cli/state.json` from the old CLI is no longer used.
 

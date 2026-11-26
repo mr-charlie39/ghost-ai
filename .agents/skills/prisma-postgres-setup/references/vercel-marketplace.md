@@ -8,9 +8,13 @@ If the project deploys to Vercel (a `vercel.json` file or `.vercel/` directory, 
 
 ## 1. Reuse an existing resource
 
-1. In the linked project, run `vercel integration list`. If a Prisma Postgres resource is connected, reuse it and go to step 3.
-2. Run `vercel integration list --all` to see the team's resources that are not connected to this project. Connect one with `vercel integration resource connect <resource-name>`.
-3. If several resources fit, ask the user which one to use.
+1. In the linked project, run `vercel integration list`. If a Prisma Postgres resource is connected, confirm its existing environment scope with the user before reusing it.
+2. Run `vercel integration list --all` to see the team's resources that are not connected to this project.
+3. Before connecting, ask which resource and which environment or environments to use. The command defaults to production, preview, and development when no environment is selected. Connect only after the user chooses:
+   ```bash
+   vercel integration resource connect <resource-name> --environment <environment>
+   ```
+   Repeat `--environment` for each environment the user selected. If several resources fit, do not choose on the user's behalf.
 
 ## 2. Install and provision with the Vercel CLI
 
@@ -23,8 +27,8 @@ vercel integration add prisma/prisma-postgres --name <resource-name>
 
 - In a non-interactive shell, pass the `region` metadata (`-m region=<value>`, values from `--help`) and `--plan`. The plan IDs are `free`, `starter`, `pro` and `business`. Use `free` unless the user chose a paid plan: a paid plan bills the user's Vercel account, so ask first.
 - If Prisma is not yet installed on the team, the CLI asks the user to accept the integration's terms in the browser and waits. An agent cannot complete this step. Ask the user to accept, then let the command continue.
-- By default the command connects the resource to the linked project's `production`, `preview` and `development` environments, then runs `vercel env pull`, which writes `.env.local`.
-- One resource on all three environments means local development, previews and production share one database. Tell the user. If they want separate data, provision one resource per environment with `-e <environment>`, and connect only one Prisma resource to each environment.
+- By default the command connects the resource to the linked project's `production`, `preview` and `development` environments, then runs `vercel env pull`, which writes `.env.local`. Do not accept that default without confirming the user's intended environment scope.
+- One resource on all three environments means local development, previews and production share one database. Tell the user. If they want separate data, provision one resource per environment and connect only one Prisma resource to each environment.
 
 In v0, use the host's native integration flow instead. It may appear as an integration request tool; discover what the host exposes instead of assuming a fixed tool name, then wait for the connection and its environment variables.
 
@@ -34,17 +38,23 @@ Connecting a resource sets these variables on each connected environment:
 
 | Variable              | Value                                                                                                                          | Use                                        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `DATABASE_URL`        | `postgres://<user>:<key>@db.prisma.io:5432/postgres?sslmode=require`                                                           | The application and Prisma CLI commands    |
+| `DATABASE_URL`        | `postgres://<user>:<key>@db.prisma.io:5432/postgres?sslmode=require`                                                           | Migrations, Prisma CLI commands, and direct application clients |
+| `DATABASE_URL_POOLED` | Managed pooled endpoint, when supplied by the integration                                                                       | Runtime traffic from Vercel Functions       |
 | `POSTGRES_URL`        | The same value as `DATABASE_URL`                                                                                               | Libraries that read `POSTGRES_URL`         |
 | `PRISMA_DATABASE_URL` | The same value on resources created now. On older resources it can be a `prisma+postgres://accelerate.prisma-data.net/...` URL | Do not use in new code; use `DATABASE_URL` |
 
 - With `--prefix`, each name gets the prefix as-is (`--prefix DB2_` gives `DB2_DATABASE_URL`). Read the prefixed name.
 - Never print the values. `vercel env ls <environment>` lists names without values.
-- `db.prisma.io` is the direct endpoint. It works for the application, migrations and Prisma Studio, so setup needs nothing else. Direct connections are capped low: 10 on Free and Starter, 5 of them reserved for the platform. Before production load from Vercel Functions, tell the user that application traffic should use the pooled endpoint (`pooled.db.prisma.io`), whose connection string Prisma Console shows for the database; `vercel integration open prisma` signs the user in. Do not overwrite the integration's variables: add the pooled string under a new name with `vercel env add`, keep `DATABASE_URL` for migrations, and switch the runtime client only if the user agrees.
+- `db.prisma.io` is the direct endpoint. Keep `DATABASE_URL` for migrations and Prisma Studio. Runtime traffic from Vercel Functions should use the integration's managed pooled endpoint, such as `DATABASE_URL_POOLED`, when present. If it is not supplied, get the pooled URL from Prisma Console (`vercel integration open prisma`) and add it under a separate variable; do not overwrite the direct URL or any integration-managed variable.
+- Configure the deployed application client to read the pooled variable; keep `prisma.config.ts` and migration commands on the direct `DATABASE_URL`.
+- Do not deploy to production or run a production schema change without the user's explicit consent.
 
 ## 4. First successful request
 
-1. Make the variables available locally: `vercel env pull`, or run each command with `vercel env run -- <command>` to keep secrets off disk.
+1. Make the variables available locally: `vercel env pull`, or run each command with `vercel env run -- <command>` to keep secrets off disk. An already-exported shell `DATABASE_URL` takes precedence over `.env.local`; verify its effective target matches the selected resource before querying. Print only the host and database name, never the URL:
+   ```bash
+   node -e 'const u=new URL(process.env.DATABASE_URL); console.log({host:u.hostname,database:u.pathname.slice(1)})'
+   ```
 2. Return to `prisma-postgres-setup` step 4 to configure the chosen ORM or driver. Prisma ORM configuration belongs to `prisma-orm-setup`.
 3. Run one read-only query (for example `SELECT 1`) through the application's ORM or driver against the connected database.
 4. Deploy. Environment variable changes apply only to new deployments, so redeploy after connecting a resource, then call a route that queries the database.
@@ -52,7 +62,7 @@ Connecting a resource sets these variables on each connected environment:
 ## 5. Validate and report
 
 - `vercel integration list` shows the resource, its status and the connected project.
-- `vercel env ls production` lists `DATABASE_URL`.
+- `vercel env ls production` lists the direct and pooled variable names configured there.
 - The local query and the deployed query both succeed.
 
 Report the resource name, the environments it is connected to, the variable the application reads, and the query result, without secrets. If a step was blocked or not tested, say so.

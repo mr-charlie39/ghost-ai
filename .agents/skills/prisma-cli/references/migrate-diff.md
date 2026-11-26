@@ -15,7 +15,7 @@ prisma migrate diff [options]
     - Empty (`empty`)
     - Schema file (`schema`)
     - Migrations directory (`migrations`)
-    - Database URL (`url`) or Configured Datasource (`config-datasource`)
+    - Configured Datasource (`config-datasource`)
 - Outputs the difference:
     - Human-readable summary (default)
     - SQL script (`--script`)
@@ -33,18 +33,24 @@ prisma migrate diff [options]
 - `--from-empty`, `--to-empty`
 - `--from-schema <path>`, `--to-schema <path>`
 - `--from-migrations <path>`, `--to-migrations <path>`
-- `--from-url <url>`, `--to-url <url>`
 - `--from-config-datasource`, `--to-config-datasource` (uses `prisma.config.ts`)
 
 ## Examples
 
 ### Generate SQL for a schema change
 
-Compare current production DB to your local schema:
+Compare the configured production database to your local schema. Set the direct production
+connection URL in `prisma.config.ts`, for example:
+
+```typescript
+export default defineConfig({
+  datasource: { url: env('PROD_DATABASE_URL') },
+})
+```
 
 ```bash
 prisma migrate diff \
-  --from-url "$PROD_DB_URL" \
+  --from-config-datasource \
   --to-schema ./prisma/schema.prisma \
   --script
 ```
@@ -59,14 +65,20 @@ prisma migrate diff \
   --to-migrations ./prisma/migrations
 ```
 
+Comparing with a migrations directory requires a shadow database. If the configured database
+user cannot create one automatically, provision a separate shadow database and set
+`shadowDatabaseUrl` in `prisma.config.ts`. Never use the production database as the shadow
+database.
+
 ### Create baseline migration
 
 Compare empty state to current schema:
 
 ```bash
+mkdir -p prisma/migrations/0_init
 prisma migrate diff \
   --from-empty \
-  --to-schema ./prisma/schema.prisma \
+  --to-schema-datamodel ./prisma/schema.prisma \
   --script > prisma/migrations/0_init/migration.sql
 ```
 

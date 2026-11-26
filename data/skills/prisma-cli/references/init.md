@@ -79,7 +79,7 @@ Adds a starter model to the generated schema.
 ### With preview features
 
 ```bash
-prisma init --preview-feature relationJoins --preview-feature fullTextSearch
+prisma init --preview-feature relationJoins --preview-feature fullTextSearchPostgres
 ```
 
 ## Generated Schema

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { GhostLogo } from "@/components/brand";
 
 export interface AuthLayoutProps {
   children: React.ReactNode;
@@ -10,14 +11,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       {/* Left panel: visible on large screens */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-surface border-r border-surface-border select-none">
         {/* Compact Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-base border border-surface-border flex items-center justify-center">
-            <div className="h-2 w-2 rounded-full bg-brand" />
-          </div>
-          <span className="font-semibold tracking-tight text-copy-primary text-base">
-            Ghost AI
-          </span>
-        </div>
+        <GhostLogo size="md" showWordmark />
 
         {/* Tagline & Feature List */}
         <div className="max-w-md space-y-6">

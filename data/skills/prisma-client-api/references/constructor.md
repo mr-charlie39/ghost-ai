@@ -202,7 +202,12 @@ Listen to query events:
 ```typescript
 const prisma = new PrismaClient({
   adapter,
-  log: [{ level: 'query', emit: 'event' }],
+  log: [
+    { level: 'query', emit: 'event' },
+    { level: 'info', emit: 'event' },
+    { level: 'warn', emit: 'event' },
+    { level: 'error', emit: 'event' },
+  ],
 })
 
 prisma.$on('query', (e) => {

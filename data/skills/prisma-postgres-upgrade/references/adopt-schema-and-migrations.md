@@ -40,15 +40,27 @@ config; that belongs to the `prisma-compute` skill, not to this upgrade.
   `contract.prisma`. `output: "src/prisma"` puts `contract.json` and `contract.d.ts` where `tsc`
   and the Compute service find them. In a Prisma ORM 7 app, this file replaces the old
   `prisma.config.ts`: Prisma 8 reads only its own format under that name.
+- **PostgreSQL extensions must already exist before signing and baselining.** If the schema uses
+  `@db.Citext`, enable `citext` in each existing database before `db sign` and the baseline.
+  Converting the schema through `prisma7Schema(...)` does not automatically create extensions
+  or preserve `citext`'s case-insensitive comparison semantics in the Prisma 8 contract; verify
+  and explicitly preserve that behavior before cutover.
 - **A CommonJS app built with `tsc` stays CommonJS.** Set `"module"` and `"moduleResolution"`
-  to `"nodenext"`, add `"resolveJsonModule": true`, keep `include` at `src`, and do not add
-  `"type": "module"`.
+  to `"nodenext"`, add `"resolveJsonModule": true`, preserve the app's existing `include`
+  entries (for example, both `src` and `scripts`), and do not add `"type": "module"`. Exclude
+  `prisma.config.ts` from the CommonJS application type-check without replacing other exclusions.
+- **Apply the old migration history before signing:** use the version-matched Prisma 6 or 7 CLI
+  to check status and apply every pending migration on each existing environment. Do not remove
+  `prisma/migrations` until all these databases have applied the history and reached the Prisma
+  8 baseline.
 - **Sign the existing database, then plan the baseline:** `npx prisma contract emit`,
   `npx prisma db sign`, `npx prisma migration plan`. The first plan on a signed database writes
   `migrations/app/<timestamp>_baseline/` and ignores `--name`; `db verify` then passes and
   `db migrate` has nothing to apply, whatever its hint says. Commit `migrations/`. Sign every
   other existing database (staging) too; databases the Compute deploy creates do not need it.
-- **Retire the old migration setup:** delete `prisma/migrations` (with `migration_lock.toml`),
+- **Retire the old migration setup only after every existing environment has applied its pending
+  Prisma 7 migrations and reached the Prisma 8 baseline.** Until then, keep the existing
+  `prisma/migrations` history intact. After that point, delete `prisma/migrations` (with `migration_lock.toml`),
   remove `prisma generate`, `prisma migrate *` and `prisma db seed` from scripts (including
   `postinstall`), and remove the `"prisma": { "seed": ... }` key. Prisma 8 has no `generate` or
   seed command; keep the seed script and run it with `tsx` (`client-api-mapping.md` shows its

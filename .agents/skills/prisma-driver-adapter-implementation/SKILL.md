@@ -88,7 +88,7 @@ class ExampleQueryable {
       return {
         columnNames: result.fields.map((field) => field.name),
         columnTypes: result.fields.map(mapColumnType),
-        rows: result.rows,
+        rows: result.rows.map((row) => mapPostgresRow(row, result.fields)),
       }
     } catch (error) {
       throwAdapterError(error)
@@ -111,7 +111,12 @@ class ExampleQueryable {
 
 ### Result mapping
 
-Return `columnNames`, `columnTypes`, and `rows` with identical lengths/order. Map driver metadata to `ColumnTypeEnum` deliberately:
+Return `columnNames` and `columnTypes` with matching lengths and order. Each row in the outer
+`rows` array must have one value for every column, in that same order; the number of rows is
+independent of the number of columns. Convert PostgreSQL driver values before returning them
+with the adapter's established row-mapping behavior; do not return raw driver rows. In
+particular, when the driver has parsed JSON into an object, stringify it again to preserve
+Prisma's engine contract. Map driver metadata to `ColumnTypeEnum` deliberately:
 
 - signed integer widths to `Int32`/`Int64`; preserve 64-bit values without JS number truncation
 - decimal/numeric to `Numeric` using the representation expected by Prisma
@@ -119,6 +124,12 @@ Return `columnNames`, `columnTypes`, and `rows` with identical lengths/order. Ma
 - date-only, time-only, and timestamp to `Date`, `Time`, and `DateTime`
 - UUID, JSON, enum, arrays, and provider-specific unknown values to their explicit types
 - unsupported native types to `DriverAdapterError({ kind: 'UnsupportedNativeDataType', type })`
+- for MySQL and SQLite auto-increment inserts, populate the result's `lastInsertId` with the
+  inserted ID; preserve the existing result fields and provider behavior for other providers
+
+`lastInsertId` is a string in `SqlResultSet`; for example, convert a driver's numeric insert ID
+with `lastInsertId: result.insertId.toString()` in MySQL or SQLite adapters. Do not populate it
+for providers or results that do not return an auto-increment ID.
 
 Test `null`, empty arrays, array element types, big integers, decimals, byte arrays, JSON, dates, and user-defined/unknown native types.
 

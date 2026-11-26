@@ -18,7 +18,7 @@ npx prisma auth whoami --json
 npx prisma project show --json
 ls module.ts prisma.config.ts
 node --version
-test -f .env && sed 's/=.*/=<redacted>/' .env
+node -e "const fs=require('node:fs');const dotenv=require('dotenv');if(fs.existsSync('.env'))console.log(Object.keys(dotenv.parse(fs.readFileSync('.env'))).join('\n'))"
 ```
 
 Re-run the failing command with `--json` (and `--report deploy-report.json` for `deploy`) and read `error.code`, `error.why`, and `nextActions`. Never print token or connection-string values.
@@ -35,7 +35,7 @@ Re-run the failing command with `--json` (and `--report deploy-report.json` for 
 | `CONFIG.FILE_RETIRED` or `CONFIG.FIELD_RETIRED` | A `prisma-composer.config.ts` or `configPath` from an older Composer | Move `extensions` and `state` into the `composer` section and delete the old file |
 | `ASSEMBLE.EXTENSION_MISSING` | A service uses `nextjs()` but `nextjsBuild()` is not in `extensions` | Add `nextjsBuild()` from `@prisma/composer/nextjs/control` |
 | `COMPOSE.GRAPH_INVALID` naming an id | A provision id or service name with a hyphen or other non-alphanumeric character | Use `[A-Za-z0-9]` only; at least three characters for provision ids |
-| Bun APIs fail while the CLI loads `module.ts` | The `prisma` bin runs under Node | `bun node_modules/.bin/prisma deploy module.ts` |
+| Bun APIs fail while the CLI loads the configured module entry | The `prisma` bin runs under Node | `bun node_modules/.bin/prisma deploy` |
 
 ## Auth and Project
 
@@ -76,7 +76,7 @@ Re-run the failing command with `--json` (and `--report deploy-report.json` for 
 | Next.js page shows build-time or missing values from `service.load()` | The route was prerendered | `export const dynamic = "force-dynamic"` |
 | `ECONNRESET` calling another service | The callee was cold-starting | Retry |
 | A changed env var has no effect | Values resolve at deploy time | Redeploy (or promote) |
-| A resource disappeared after a deploy | Its `provision()` was removed from `module.ts` | Restore the declaration and redeploy |
+| A resource disappeared after a deploy | Its `provision()` was removed from `module.ts` | Restore the declaration and redeploy. Recreating a database does not restore deleted rows; recover those from a backup or another data source before considering the incident resolved |
 | A preview's database is empty | Stages get their own empty databases | Seed it; production data is never copied |
 
 ## Deploy on Push
