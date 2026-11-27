@@ -286,6 +286,28 @@ Update this file whenever the current phase, active feature, or implementation s
     - Wired `CanvasFlowInner` to clear existing nodes and edges via `onDelete({ nodes, edges })` and add the selected template's nodes and edges via `onNodesChange` and `onEdgesChange` inside `room.batch(...)`, then fit the view with `reactFlow.fitView`.
   - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on `app/globals.css`.
 
+- **Feature 19: Presence Avatars & Live Cursors** (`context/feature-specs/19-presence-avatars-cursors.md`)
+  - Updated `liveblocks.config.ts` `Presence` type to `{ cursor: { x: number; y: number } | null; thinking: boolean }` and aligned `initialPresence` in `components/canvas/canvas-wrapper.tsx`.
+  - Created `components/canvas/presence-avatars.tsx` (`PresenceAvatars`):
+    - Positioned in the top-right corner of the editor canvas view (`absolute top-4 right-4 z-20`), keeping the shared `EditorNavbar` and editor home navbar unchanged.
+    - Reads the active Clerk user ID via `useAuth()` and filters Liveblocks `useOthers()` to exclude the current user and deduplicate collaborators.
+    - Renders up to 5 non-interactive collaborator avatars in an overlapping stack (`-space-x-2`) with profile image + initials fallback, subtle dark-canvas ring (`ring-2 ring-base`), and a `+N` overflow chip when more than 5 collaborators are present.
+    - Renders a vertical divider only when at least one collaborator is present, followed by the Clerk `<UserButton />` at the same `h-7 w-7` size.
+  - Created `components/canvas/live-cursors.tsx` (`LiveCursors`) and wired it in `components/canvas/canvas-view.tsx`:
+    - Broadcasts cursor position in flow coordinates via `useMyPresence()` on React Flow's `onMouseMove` and clears `cursor` to `null` on `onMouseLeave`.
+    - Renders colored pointer SVGs and matching name badges for other participants only, transformed into viewport coordinates via `useViewport()`.
+  - Exported `PresenceAvatars` and `LiveCursors` from `components/canvas/index.ts`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on `app/globals.css`.
+
+- **Feature 20: AI Sidebar Shell** (`context/feature-specs/20-ai-sidebar-shell.md`)
+  - Created `components/editor/ai-sidebar.tsx` (`AiSidebar`), controlled via `isOpen` and `onClose` props while preserving the floating right-side overlay (`fixed top-14 right-0 bottom-0 z-40`), slide-in transition, `bg-base/95`, `border-surface-border`, and shadow treatment.
+  - Added header with bot icon, `AI Workspace` title (`text-copy-primary`), `Collaborate with Ghost AI` subtitle (`text-copy-muted`), and right-aligned close button.
+  - Added shadcn `Tabs` (`AI Architect` and `Specs`) with AI accent active styling (`bg-ai/15 text-ai-text`) and muted inactive text (`text-copy-muted`).
+  - Built `AI Architect` tab with scrollable chat area, empty state featuring bot icon and starter prompt pills (`Design an e-commerce backend`, `Create a chat app architecture`, `Build a CI/CD pipeline`) styled with `bg-subtle text-ai-text`, right-aligned user bubbles (`bg-accent-dim border-brand/50 border-2 text-copy-primary`), left-aligned assistant bubbles (`bg-elevated border-surface-border text-ai-text`), auto-resizing shadcn `Textarea` (`72px` min to `160px` max height), `Enter` submit / `Shift+Enter` newline handling, and `bg-ai text-white` send button.
+  - Built `Specs` tab with a `Generate Spec` button (`bg-ai text-white`) and a static demo spec card (`bg-elevated border-surface-border`) containing a file icon, title, snippet, and disabled download action.
+  - Wired `AiSidebar` into `components/editor/editor-layout.tsx` and exported it from `components/editor/index.ts`.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings).
+
 ## In Progress
 
 - Next feature unit preparation.

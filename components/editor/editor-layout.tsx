@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Folder, LayoutTemplate, Send, Share2, Sparkles, X } from "lucide-react";
+import { Folder, LayoutTemplate, Share2, Sparkles } from "lucide-react";
+import { AiSidebar } from "@/components/editor/ai-sidebar";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
 import { EditorHome } from "@/components/editor/editor-home";
@@ -63,8 +64,6 @@ function EditorLayoutInner({
   const [isAiSidebarOpen, setIsAiSidebarOpen] = React.useState(false);
   const [isShareOpen, setIsShareOpen] = React.useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = React.useState(false);
-  const [aiPrompt, setAiPrompt] = React.useState("");
-  const [aiStatusMessage, setAiStatusMessage] = React.useState<string | null>(null);
 
   const handleImportTemplate = React.useCallback(
     (template: CanvasTemplate) => {
@@ -72,13 +71,6 @@ function EditorLayoutInner({
     },
     [templateImport]
   );
-
-  const handleSendPrompt = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!aiPrompt.trim()) return;
-    setAiStatusMessage(`Prompt "${aiPrompt.trim()}" queued for AI generation.`);
-    setTimeout(() => setAiStatusMessage(null), 3500);
-  };
 
   const projectActions = useProjectActions({
     initialOwnedProjects,
@@ -204,116 +196,10 @@ function EditorLayoutInner({
         </main>
 
         {/* Floating Right AI Sidebar Overlay */}
-        {isAiSidebarOpen && (
-          <div
-            role="presentation"
-            aria-hidden="true"
-            onClick={() => setIsAiSidebarOpen(false)}
-            className="fixed inset-0 top-14 z-30 bg-black/60 backdrop-blur-xs md:hidden cursor-pointer"
-          />
-        )}
-        <aside
-          aria-label="AI Sidebar"
-          aria-hidden={!isAiSidebarOpen}
-          inert={!isAiSidebarOpen}
-          className={cn(
-            "fixed top-14 right-0 bottom-0 z-40 w-80 md:w-96 max-w-[calc(100vw-2rem)] flex flex-col bg-surface/95 backdrop-blur-md border-l border-surface-border select-none transition-all duration-300 ease-in-out",
-            isAiSidebarOpen
-              ? "translate-x-0 shadow-2xl opacity-100"
-              : "translate-x-[calc(100%+1rem)] shadow-none opacity-0 pointer-events-none"
-          )}
-        >
-          {/* AI Sidebar Header */}
-          <div className="flex h-14 items-center justify-between px-4 border-b border-surface-border shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-ai/10 border border-accent-ai/30 text-accent-ai">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-semibold text-copy-primary">AI Architect</h3>
-                <p className="text-[10px] text-copy-muted font-mono">Durable agent runner</p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => setIsAiSidebarOpen(false)}
-              aria-label="Close AI sidebar"
-              className="text-copy-muted hover:text-copy-primary hover:bg-subtle cursor-pointer rounded-lg"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {/* AI Assistant Chat Body Placeholder */}
-          <div className="flex flex-1 flex-col justify-between p-4 overflow-hidden">
-            <div className="flex flex-col items-center justify-center text-center my-auto px-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-base border border-surface-border text-accent-ai mb-3 shadow-[0_0_20px_rgba(100,87,249,0.15)]">
-                <Bot className="h-6 w-6" />
-              </div>
-              <p className="text-xs font-semibold text-copy-primary">Describe your architecture</p>
-              <p className="mt-1 text-[11px] text-copy-muted max-w-[240px] leading-relaxed">
-                The AI agent maps plain English system requirements into nodes and edges on the canvas.
-              </p>
-
-              {/* Example prompt pills */}
-              <div className="mt-5 flex flex-col gap-1.5 w-full text-left">
-                <span className="text-[10px] font-medium text-copy-faint uppercase tracking-wider px-1">
-                  Try suggesting:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAiPrompt("Event-driven microservices with Kafka and Redis")}
-                  className="text-[11px] text-left text-copy-secondary bg-base border border-surface-border rounded-lg px-2.5 py-1.5 hover:border-accent-ai/50 hover:text-accent-ai transition-colors cursor-pointer"
-                >
-                  &ldquo;Event-driven microservices with Kafka&rdquo;
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAiPrompt("Serverless REST API with Redis cache and Auth0")}
-                  className="text-[11px] text-left text-copy-secondary bg-base border border-surface-border rounded-lg px-2.5 py-1.5 hover:border-accent-ai/50 hover:text-accent-ai transition-colors cursor-pointer"
-                >
-                  &ldquo;Serverless REST API with Redis cache&rdquo;
-                </button>
-              </div>
-            </div>
-
-            {/* Status notification toast */}
-            {aiStatusMessage && (
-              <div className="mb-2 p-2 rounded-lg bg-accent-ai/10 border border-accent-ai/30 text-[11px] text-accent-ai animate-in fade-in slide-in-from-bottom-1">
-                {aiStatusMessage}
-              </div>
-            )}
-
-            {/* Prompt input bar at bottom */}
-            <form onSubmit={handleSendPrompt} className="pt-3 border-t border-surface-border">
-              <div className="relative flex items-center rounded-xl bg-base border border-surface-border px-3 py-2 focus-within:border-accent-ai/50 focus-within:ring-1 focus-within:ring-accent-ai/30 transition-all">
-                <input
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ask AI to design system..."
-                  className="w-full bg-transparent text-xs text-copy-primary placeholder:text-copy-faint outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={!aiPrompt.trim()}
-                  aria-label="Send prompt"
-                  className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent-ai/15 text-accent-ai hover:bg-accent-ai hover:text-white disabled:opacity-30 disabled:hover:bg-accent-ai/15 disabled:hover:text-accent-ai shrink-0 ml-1 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Send className="h-3 w-3" />
-                </button>
-              </div>
-              <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-copy-faint">
-                <span>Trigger.dev background worker</span>
-                <span className="font-mono text-emerald-400/90 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                  Ready
-                </span>
-              </div>
-            </form>
-          </div>
-        </aside>
+        <AiSidebar
+          isOpen={isAiSidebarOpen}
+          onClose={() => setIsAiSidebarOpen(false)}
+        />
       </div>
 
       {/* Project Dialogs (Create, Rename, Delete) */}

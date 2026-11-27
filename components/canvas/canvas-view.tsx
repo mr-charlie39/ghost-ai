@@ -14,8 +14,15 @@ import {
   type EdgeTypes,
   type NodeTypes,
 } from "@xyflow/react";
-import { useCanRedo, useCanUndo, useRedo, useRoom, useUndo } from "@liveblocks/react";
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
+import {
+  useCanRedo,
+  useCanUndo,
+  useMyPresence,
+  useRedo,
+  useRoom,
+  useUndo,
+} from "@liveblocks/react";
+import { useLiveblocksFlow } from "@liveblocks/react-flow";
 import {
   DEFAULT_NODE_COLOR,
   NODE_SHAPES,
@@ -29,6 +36,8 @@ import {
 import { CanvasControls } from "@/components/canvas/canvas-controls";
 import { CanvasEdgeComponent } from "@/components/canvas/canvas-edge";
 import { CanvasNodeComponent } from "@/components/canvas/canvas-node";
+import { LiveCursors } from "@/components/canvas/live-cursors";
+import { PresenceAvatars } from "@/components/canvas/presence-avatars";
 import { ShapePanel } from "@/components/canvas/shape-panel";
 import { ShapeVisual } from "@/components/canvas/shape-visual";
 import { useTemplateImport } from "@/components/editor/template-import-context";
@@ -112,6 +121,7 @@ function CanvasFlowInner() {
   const redo = useRedo();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
+  const [, updateMyPresence] = useMyPresence();
 
   useKeyboardShortcuts({
     reactFlow,
@@ -284,6 +294,21 @@ function CanvasFlowInner() {
     [onNodesChange, screenToFlowPosition]
   );
 
+  const handleMouseMove = React.useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      updateMyPresence({ cursor: position });
+    },
+    [screenToFlowPosition, updateMyPresence]
+  );
+
+  const handleMouseLeave = React.useCallback(() => {
+    updateMyPresence({ cursor: null });
+  }, [updateMyPresence]);
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -300,6 +325,8 @@ function CanvasFlowInner() {
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onDelete={onDelete}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         nodesDraggable
         connectionMode={ConnectionMode.Loose}
         colorMode="dark"
@@ -313,8 +340,9 @@ function CanvasFlowInner() {
           color="var(--border-subtle)"
           className="!bg-base"
         />
-        <Cursors />
+        <LiveCursors />
       </ReactFlow>
+      <PresenceAvatars />
       <CanvasControls
         onZoomIn={() => void reactFlow.zoomIn({ duration: 200 })}
         onZoomOut={() => void reactFlow.zoomOut({ duration: 200 })}

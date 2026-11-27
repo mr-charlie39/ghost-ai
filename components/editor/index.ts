@@ -1,3 +1,4 @@
+export * from "./ai-sidebar";
 export * from "./editor-navbar";
 export * from "./project-sidebar";
 export * from "./dialog-pattern";

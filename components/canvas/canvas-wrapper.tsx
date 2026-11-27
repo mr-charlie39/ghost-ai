@@ -267,7 +267,7 @@ export function CanvasWrapper({
           id={roomId}
           initialPresence={{
             cursor: null,
-            isThinking: false,
+            thinking: false,
           }}
         >
           <ClientSideSuspense fallback={<CanvasLoading roomId={roomId} />}>
