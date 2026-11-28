@@ -2,8 +2,21 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Folder, LayoutTemplate, Share2, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Folder,
+  LayoutTemplate,
+  Loader2,
+  Save,
+  Share2,
+  Sparkles,
+} from "lucide-react";
 import { AiSidebar } from "@/components/editor/ai-sidebar";
+import {
+  CanvasSaveProvider,
+  useCanvasSave,
+} from "@/components/editor/canvas-save-context";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
 import { EditorHome } from "@/components/editor/editor-home";
@@ -36,9 +49,11 @@ export interface EditorLayoutProps {
 
 export function EditorLayout(props: EditorLayoutProps) {
   return (
-    <TemplateImportProvider>
-      <EditorLayoutInner {...props} />
-    </TemplateImportProvider>
+    <CanvasSaveProvider>
+      <TemplateImportProvider>
+        <EditorLayoutInner {...props} />
+      </TemplateImportProvider>
+    </CanvasSaveProvider>
   );
 }
 
@@ -56,7 +71,9 @@ function EditorLayoutInner({
   isOwner = false,
 }: EditorLayoutProps) {
   const router = useRouter();
+  const canvasSave = useCanvasSave();
   const templateImport = useTemplateImport();
+  const saveStatus = canvasSave?.saveStatus ?? "idle";
   const currentActiveId = activeRoomId || activeProjectId;
   const isWorkspace = showWorkspaceActions || Boolean(currentActiveId);
 
@@ -101,6 +118,49 @@ function EditorLayoutInner({
       {rightNavbarContent}
       {isWorkspace && (
         <>
+          {/* Save button with autosave status indicator */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => void canvasSave?.triggerManualSave()}
+            disabled={saveStatus === "saving"}
+            aria-label={
+              saveStatus === "saving"
+                ? "Saving canvas"
+                : saveStatus === "saved"
+                  ? "Canvas saved"
+                  : saveStatus === "error"
+                    ? "Save failed, click to retry"
+                    : "Save canvas"
+            }
+            className={cn(
+              "h-8 gap-1.5 text-xs cursor-pointer transition-colors",
+              saveStatus === "error"
+                ? "text-state-error hover:text-state-error hover:bg-state-error/10"
+                : "text-copy-secondary hover:text-copy-primary hover:bg-subtle"
+            )}
+          >
+            {saveStatus === "saving" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
+            ) : saveStatus === "saved" ? (
+              <Check className="h-3.5 w-3.5 text-state-success" />
+            ) : saveStatus === "error" ? (
+              <AlertCircle className="h-3.5 w-3.5 text-state-error" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {saveStatus === "saving"
+                ? "Saving..."
+                : saveStatus === "saved"
+                  ? "Saved"
+                  : saveStatus === "error"
+                    ? "Error"
+                    : "Save"}
+            </span>
+          </Button>
+
           {/* Starter Templates button that opens StarterTemplatesModal */}
           <Button
             type="button"
@@ -162,6 +222,7 @@ function EditorLayoutInner({
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         centerContent={centerContent}
         rightContent={rightContent}
+        showUserButton={!isWorkspace}
       />
 
       {/* Floating Project Sidebar Overlay */}
@@ -199,6 +260,7 @@ function EditorLayoutInner({
         <AiSidebar
           isOpen={isAiSidebarOpen}
           onClose={() => setIsAiSidebarOpen(false)}
+          roomId={currentActiveId}
         />
       </div>
 

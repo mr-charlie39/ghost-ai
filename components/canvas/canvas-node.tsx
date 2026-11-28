@@ -33,7 +33,7 @@ function resolveNodeTextColor(fillColor: string): string {
 }
 
 const HANDLE_CLASS =
-  "!h-2.5 !w-2.5 !rounded-full !border !border-border-default !bg-white opacity-0 transition-opacity group-hover:opacity-100";
+  "!z-20 !h-2.5 !w-2.5 !rounded-full !border !border-border-default !bg-white opacity-0 transition-opacity group-hover:opacity-100";
 
 export function CanvasNodeComponent({
   id,

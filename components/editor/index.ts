@@ -1,4 +1,5 @@
 export * from "./ai-sidebar";
+export * from "./canvas-save-context";
 export * from "./editor-navbar";
 export * from "./project-sidebar";
 export * from "./dialog-pattern";

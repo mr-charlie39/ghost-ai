@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Next feature unit (Canvas persistence or AI architecture generation).
+- Next feature unit (AI architecture generation).
 
 ## Completed
 
@@ -308,13 +308,72 @@ Update this file whenever the current phase, active feature, or implementation s
   - Wired `AiSidebar` into `components/editor/editor-layout.tsx` and exported it from `components/editor/index.ts`.
   - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings).
 
+- **Feature 21: Canvas Autosave & Loading** (`context/feature-specs/21-canvas-autosave.md`)
+  - Installed `@vercel/blob` and reused `canvasJsonPath` on the `Project` model in `prisma/models/project.prisma` to store the Vercel Blob URL while keeping Prisma responsible for metadata only.
+  - Created `app/api/projects/[projectId]/canvas/route.ts`:
+    - `PUT /api/projects/[projectId]/canvas`: verifies Clerk authentication and project membership via `checkProjectAccess`, validates `nodes` and `edges` arrays, uploads canvas JSON to Vercel Blob at `canvas/{projectId}.json`, and updates `canvasJsonPath` on the Prisma project record.
+    - `GET /api/projects/[projectId]/canvas`: verifies Clerk authentication and project membership, reads `canvasJsonPath` from Prisma, fetches and validates the saved canvas JSON from Vercel Blob, and returns `{ nodes, edges, hasSavedCanvas }`.
+  - Created `hooks/use-canvas-autosave.ts` (`useCanvasAutosave`) and exported it from `hooks/index.ts`:
+    - Watches `nodes` and `edges`, debounces saves (`1500ms`), skips redundant initial saves until initial room load completes, exposes `saveNow()` for manual saves, and tracks `"idle" | "saving" | "saved" | "error"` status.
+  - Created `components/editor/canvas-save-context.tsx` (`CanvasSaveProvider`, `useCanvasSave`) and wired a Save button with status indicator (`Save`, `Saving...`, `Saved`, `Save failed`) into `components/editor/editor-layout.tsx`.
+  - Updated `app/editor/[roomId]/page.tsx`, `components/canvas/canvas-wrapper.tsx`, and `components/canvas/canvas-view.tsx` (`CanvasView` / `CanvasFlowInner`) to check whether the Liveblocks room is empty on load, fetch and load saved canvas state only when the room is empty and `hasSavedCanvas` is true, and skip loading if the room already has active nodes or edges.
+  - Verified clean TypeScript checks (`npx tsc --noEmit`) and clean lint (`npm run lint` - 0 errors, 0 warnings); `npm run build` hit the pre-existing Turbopack PostCSS worker spawn error on `app/globals.css`.
+- **Trigger.dev Setup**
+  - Verified `@trigger.dev/sdk` (`^4.8.10`), `@trigger.dev/build` (`^4.8.10`), `trigger.config.ts` (`project: "proj_ypxqpohtbcfzwltpcfhv"`, `dirs: ["./src/trigger"]`), `tsconfig.json` include, and `.gitignore` `.trigger` entry.
+  - Added starter task `helloWorld` (`id: "hello-world"`) in `src/trigger/example.ts`.
+  - Documented `TRIGGER_SECRET_KEY` in `.env.example`.
+- **Feature 22: Design Agent API & Task Wiring** (`context/feature-specs/22-design-agent-api.md`)
+  - Added `TaskRun` model in `prisma/models/task-run.prisma` (linked to `Project` in `prisma/models/project.prisma` with `onDelete: Cascade`), including unique `runId`, `projectId`, `userId`, `createdAt`, an index on `runId`, and a compound index on `[userId, projectId]`.
+  - Created and applied Prisma migration `20261127151829_add_task_run` and regenerated Prisma Client.
+  - Created minimal Trigger.dev task `designAgentTask` (`id: "design-agent"`) in `src/trigger/design-agent.ts` reusing the existing `dirs: ["./src/trigger"]` setup, accepting `{ prompt, roomId }` and logging/echoing the input without AI logic.
+  - Created `POST /api/ai/design` (`app/api/ai/design/route.ts`): verifies Clerk authentication and project membership via `checkProjectAccess`, triggers `design-agent` via `tasks.trigger`, persists a `TaskRun` record in Prisma, and returns `{ runId }`.
+  - Created `POST /api/ai/design/token` (`app/api/ai/design/token/route.ts`): verifies Clerk authentication and `TaskRun` ownership (`taskRun.userId === userId`), mints a run-scoped Trigger.dev public token via `auth.createPublicToken({ scopes: { read: { runs: [runId] } } })`, and returns `{ token }`.
+  - Verified `npx tsc --noEmit`, ESLint on all new files (0 errors, 0 warnings), and `npm run build` (passed).
+- **Feature 23: Design Agent Logic** (`context/feature-specs/23-design-agent-logic.md`)
+  - Created `lib/ai-design-schema.ts` defining Zod schemas (`designPlanSchema`, `canvasActionSchema`) for `add_node`, `move_node`, `resize_node`, `update_node_data`, `delete_node`, `add_edge`, and `delete_edge`, along with dark-canvas palette resolution (`NODE_COLORS`), shape defaults (`SHAPE_DEFAULT_SIZES`), dimension clamping, and `DESIGN_SYSTEM_PROMPT` layout/spacing rules.
+  - Created `lib/liveblocks-ai.ts` providing `setAiPresence`, `clearAiPresence` (via `liveblocks.setPresence`), and `publishAiStatus` (via `liveblocks.createFeed` / `liveblocks.createFeedMessage` on feed `"ai-status"`).
+  - Updated `src/trigger/design-agent.ts` (`designAgentTask`) to read the current collaborative canvas via `mutateFlow` (`@liveblocks/react-flow/node`), call Gemini (`gemini-2.5-flash` via `@ai-sdk/google` using `GOOGLE_AI_API_KEY`) with `generateText` + `Output.object`, apply the resulting node/edge mutations through `mutateFlow`, publish start/processing/complete/error status messages, update AI cursor + thinking presence, and clear AI presence in `finally`.
+- **Feature 24: AI Presence & Realtime Status State** (`context/feature-specs/24-ai-presence-state.md`)
+  - Created `types/tasks.ts` defining `AI_STATUS_FEED_ID = "ai-status-feed"`, Zod validation schemas (`aiStatusStepSchema`, `aiStatusFeedMessageSchema` supporting optional `text`, `message`, `step`, `prompt`, and `timestamp` fields), and `parseAiStatusFeedMessage` to validate incoming feed payloads before display.
+  - Aligned `lib/liveblocks-ai.ts` with `AI_STATUS_FEED_ID` (`"ai-status-feed"`) and included `text` in published status messages.
+  - Extracted `WorkspaceRoomProvider` in `components/canvas/canvas-wrapper.tsx` and mounted it around `EditorLayout` in `app/editor/[roomId]/page.tsx` so both the canvas and `AiSidebar` share the Liveblocks `RoomProvider` while preserving `CanvasNotice` error/config fallbacks.
+  - Updated `components/editor/ai-sidebar.tsx` (`AiSidebar`) to subscribe to room presence (`useOthers`, `useMyPresence`) and the latest validated `ai-status-feed` message (`useFeedMessages`) when inside a room, rendering a compact shared status indicator, disabling the chat input and starter prompts while AI is working, showing a loading spinner on the send button, and keeping the rest of the sidebar usable.
+  - Updated `components/canvas/live-cursors.tsx` (`LiveCursors`) to show a small spinner in a participant's cursor name badge when `thinking: true` in presence and hide it when `false` or missing.
+- **Feature 25: Sidebar Chat Feed** (`context/feature-specs/25-sidebar-chat-feed.md`)
+  - Extended `types/tasks.ts` with `AI_CHAT_FEED_ID = "ai-chat"`, `aiChatRoleSchema`, `aiChatFeedMessageSchema` (`sender`, `role`, `content`, `timestamp`), and `parseAiChatFeedMessage` to validate incoming chat messages before rendering.
+  - Wired `AiSidebar` (`components/editor/ai-sidebar.tsx`) to subscribe to the room-scoped `ai-chat` Liveblocks feed (`useFeedMessages`), separate from `ai-status-feed`.
+  - Rendered validated chat messages in chronological order displaying sender, formatted timestamp, and content, styled consistently with the existing sidebar UI.
+  - Implemented collaborative message sending via `useCreateFeed` + `useCreateFeedMessage` using the existing sidebar input and send button, clearing the input on success and displaying a small inline error state if sending fails.
+- **Feature 26: Functional AI Chat & Realtime Run Tracking** (`context/feature-specs/26-ai-chat-functional.md`)
+  - Passed `roomId` (`currentActiveId`) from `EditorLayout` (`components/editor/editor-layout.tsx`) to `AiSidebar` (`components/editor/ai-sidebar.tsx`).
+  - Updated `AiSidebar` prompt submission to post the user message to `ai-chat`, call `POST /api/ai/design` (and `POST /api/ai/design/token` when `publicToken` is not returned directly), and store `{ runId, publicToken }` in local state.
+  - Added `DesignRunTracker` using `useRealtimeRun<typeof designAgentTask>` from `@trigger.dev/react-hooks` to track run completion and terminal failures, posting the final assistant summary or error message to `ai-chat` and resetting run state.
+  - Rendered the compact `ai-status-feed` strip above the input only while a run is active, disabled the chat input during active runs, showed a spinner on the submit button, and styled user bubbles, submit button, and status strip using existing `globals.css` tokens (`bg-state-success`, `bg-elevated`, `bg-base`).
+- **Feature 27: Spec Generation Backend Flow** (`context/feature-specs/27-spec-generation-flow.md`)
+  - Created `lib/ai-spec-schema.ts` defining Zod validation schemas (`specChatMessageSchema`, `specNodeSchema`, `specEdgeSchema`, `specTriggerRequestSchema`, `specTokenRequestSchema`, `generateSpecPayloadSchema`) and `SPEC_SYSTEM_PROMPT`.
+  - Created `src/trigger/generate-spec.ts` (`generateSpec`, task id `"generate-spec"`) validating input with Zod, calling Gemini via `@ai-sdk/google` (`generateText`) with model fallback, updating `metadata` (`start`, `processing`, `complete`, `error`) and logging, and returning plain Markdown output.
+  - Created `POST /api/ai/spec` (`app/api/ai/spec/route.ts`) authenticating the user, validating `roomId`, `chatHistory`, `nodes`, and `edges` with Zod, resolving project access strictly from `roomId` via `checkProjectAccess`, triggering `generate-spec`, persisting a `TaskRun` record in Prisma, and returning `{ runId }`.
+  - Created `POST /api/ai/spec/token` (`app/api/ai/spec/token/route.ts`) authenticating the user, validating `runId` with Zod, verifying `TaskRun` ownership (`taskRun.userId === userId`), and issuing a 1-hour (`expirationTime: "1h"`) run-scoped Trigger.dev public token.
+  - Verified `npx tsc --noEmit` and `npx eslint` on all new files (0 errors, 0 warnings); `npm run build` hit a Turbopack internal junction-point error on `pg` (`os error 80`).
+- **Feature 28: Spec Persistence & Download** (`context/feature-specs/28-spec-persistence-download.md`)
+  - Added `ProjectSpec` model in `prisma/models/project-spec.prisma` (linked to `Project` in `prisma/models/project.prisma` with `onDelete: Cascade`), storing `id`, `projectId`, `filePath`, and `createdAt` with indexes on `[projectId]` and `[projectId, createdAt]`.
+  - Created and applied Prisma migration `20261128165935_add_project_spec` and regenerated Prisma Client.
+  - Updated `src/trigger/generate-spec.ts` (`generateSpec`) to upload the generated Markdown to Vercel Blob at `specs/{projectId}/{specId}.md` (`access: "private"`), persist the `ProjectSpec` metadata record in Prisma with `filePath: blob.url`, set `specId` in run metadata, and return the plain Markdown output.
+  - Created `GET /api/projects/[projectId]/specs/[specId]/download` (`app/api/projects/[projectId]/specs/[specId]/download/route.ts`) authenticating the user, verifying project membership via `checkProjectAccess`, verifying the spec belongs to the project, fetching the private Markdown blob from Vercel Blob, and returning it as a `text/markdown; charset=utf-8` attachment (`Content-Disposition: attachment; filename="spec-{id}.md"`).
+  - Verified `npx prisma generate`, `npx tsc --noEmit`, `npx eslint` on all changed files (0 errors, 0 warnings), and `npx next typegen`.
+- **Feature 29: Spec UI Integration** (`context/feature-specs/29-spec-ui-integration.md`)
+  - Created `GET /api/projects/[projectId]/specs` (`app/api/projects/[projectId]/specs/route.ts`) authenticating the user, checking project access via `checkProjectAccess`, and returning `ProjectSpec` metadata (`id`, `filename`, `createdAt`) ordered by `createdAt` descending without exposing Blob URLs.
+  - Created `components/editor/spec-preview-modal.tsx` (`SpecPreviewModal`) using shadcn `Dialog`, `ScrollArea`, and `Button` with dark workspace tokens, fetching Markdown content on demand from `/api/projects/[projectId]/specs/[specId]/download` (clearing content when closed), rendering Markdown cleanly, and supporting close/Escape and `.md` download.
+  - Updated `components/editor/ai-sidebar.tsx` (`AiSidebar` Specs tab) to load and display the scrollable list of project specs (`filename` + `createdAt`), open `SpecPreviewModal` on item click, trigger browser downloads from both list items and the modal, and wire the `Generate Spec` button to `POST /api/ai/spec` + `POST /api/ai/spec/token` + `SpecRunTracker` (`useRealtimeRun<typeof generateSpec>`), refreshing the spec list on completion.
+  - Verified `npx tsc --noEmit`, `npx eslint` on all changed files (0 errors, 0 warnings), and `npx next typegen`.
+
 ## In Progress
 
-- Next feature unit preparation.
+- All planned feature units completed.
 
 ## Next Up
 
-- Canvas persistence or AI architecture generation.
+- End-to-end QA and deployment verification.
 
 ## Open Questions
 

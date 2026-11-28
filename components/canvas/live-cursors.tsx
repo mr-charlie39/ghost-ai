@@ -4,6 +4,7 @@ import * as React from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useOthers } from "@liveblocks/react/suspense";
 import { useViewport } from "@xyflow/react";
+import { Loader2 } from "lucide-react";
 
 export function LiveCursors() {
   const { userId } = useAuth();
@@ -22,6 +23,7 @@ export function LiveCursors() {
 
         const color = other.info?.color || "var(--accent-primary)";
         const name = other.info?.name || "Collaborator";
+        const isThinking = Boolean(other.presence?.thinking);
         const screenX = cursor.x * zoom + viewportX;
         const screenY = cursor.y * zoom + viewportY;
 
@@ -50,10 +52,16 @@ export function LiveCursors() {
               />
             </svg>
             <span
-              className="ml-3.5 -mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium leading-tight text-white shadow-md whitespace-nowrap"
+              className="ml-3.5 -mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium leading-tight text-white shadow-md whitespace-nowrap"
               style={{ backgroundColor: color }}
             >
-              {name}
+              {isThinking && (
+                <Loader2
+                  className="h-3 w-3 animate-spin shrink-0"
+                  aria-hidden="true"
+                />
+              )}
+              <span>{name}</span>
             </span>
           </div>
         );

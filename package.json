@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "prisma generate --schema prisma && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "trigger:dev": "node -e \"require('child_process').execSync('npx trigger.dev@4.8.10 dev',{stdio:'inherit',env:{...process.env,NODE_NO_WARNINGS:'1'}})\""
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.128",
     "@base-ui/react": "^1.9.0",
     "@clerk/nextjs": "^7.10.2",
     "@clerk/ui": "^1.43.0",
@@ -19,7 +21,11 @@
     "@liveblocks/react-ui": "^3.25.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@trigger.dev/react-hooks": "4.8.10",
+    "@trigger.dev/sdk": "4.8.10",
+    "@vercel/blob": "^2.9.0",
     "@xyflow/react": "^12.12.1",
+    "ai": "^7.0.183",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "dotenv": "^18.0.10",
@@ -34,6 +40,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/turbopack": "4.3.3",
+    "@trigger.dev/build": "4.8.10",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
