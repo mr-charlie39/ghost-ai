@@ -8,14 +8,23 @@ import {
   ConnectionMode,
   MarkerType,
   ReactFlowProvider,
+  useEdges,
+  useNodes,
   useReactFlow,
   type Connection,
   type DefaultEdgeOptions,
   type EdgeTypes,
   type NodeTypes,
 } from "@xyflow/react";
-import { useCanRedo, useCanUndo, useRedo, useRoom, useUndo } from "@liveblocks/react";
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
+import {
+  useCanRedo,
+  useCanUndo,
+  useMyPresence,
+  useRedo,
+  useRoom,
+  useUndo,
+} from "@liveblocks/react";
+import { useLiveblocksFlow } from "@liveblocks/react-flow";
 import {
   DEFAULT_NODE_COLOR,
   NODE_SHAPES,
@@ -29,9 +38,13 @@ import {
 import { CanvasControls } from "@/components/canvas/canvas-controls";
 import { CanvasEdgeComponent } from "@/components/canvas/canvas-edge";
 import { CanvasNodeComponent } from "@/components/canvas/canvas-node";
+import { LiveCursors } from "@/components/canvas/live-cursors";
+import { PresenceAvatars } from "@/components/canvas/presence-avatars";
 import { ShapePanel } from "@/components/canvas/shape-panel";
 import { ShapeVisual } from "@/components/canvas/shape-visual";
+import { useCanvasSave } from "@/components/editor/canvas-save-context";
 import { useTemplateImport } from "@/components/editor/template-import-context";
+import { useCanvasAutosave } from "@/hooks/use-canvas-autosave";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const nodeTypes = {
@@ -90,10 +103,27 @@ function parseShapeDragPayload(raw: string): ShapeDragPayload | null {
       shape: candidate.shape as NodeShape,
       width: candidate.width,
       height: candidate.height,
+      offsetX:
+        typeof candidate.offsetX === "number" && Number.isFinite(candidate.offsetX)
+          ? candidate.offsetX
+          : 0,
+      offsetY:
+        typeof candidate.offsetY === "number" && Number.isFinite(candidate.offsetY)
+          ? candidate.offsetY
+          : 0,
     };
   } catch {
     return null;
   }
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName;
+  if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
+    return true;
+  }
+  return target.isContentEditable;
 }
 
 interface DragPreviewState {
@@ -102,16 +132,30 @@ interface DragPreviewState {
   y: number;
 }
 
-function CanvasFlowInner() {
+export interface CanvasViewProps {
+  projectId: string;
+  hasSavedCanvas?: boolean;
+}
+
+function CanvasFlowInner({ projectId, hasSavedCanvas = false }: CanvasViewProps) {
+  const canvasWrapperRef = React.useRef<HTMLDivElement | null>(null);
   const reactFlow = useReactFlow<CanvasNode, CanvasEdge>();
   const { screenToFlowPosition } = reactFlow;
+  const flowNodes = useNodes<CanvasNode>();
+  const flowEdges = useEdges<CanvasEdge>();
   const room = useRoom();
+  const canvasSave = useCanvasSave();
   const templateImport = useTemplateImport();
   const lastHandledImportIdRef = React.useRef<number | null>(null);
+  const hasCheckedInitialLoadRef = React.useRef(false);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = React.useState(
+    () => !hasSavedCanvas
+  );
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
+  const [, updateMyPresence] = useMyPresence();
 
   useKeyboardShortcuts({
     reactFlow,
@@ -135,6 +179,117 @@ function CanvasFlowInner() {
       initial: [],
     },
   });
+
+  const nodesRef = React.useRef(nodes);
+  const edgesRef = React.useRef(edges);
+  React.useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
+
+  // Load saved canvas from Vercel Blob only when the Liveblocks room is empty
+  const isRoomEmpty = nodes.length === 0 && edges.length === 0;
+  const effectiveIsLoaded = isInitialLoadComplete || !isRoomEmpty;
+
+  React.useEffect(() => {
+    if (hasCheckedInitialLoadRef.current) return;
+    hasCheckedInitialLoadRef.current = true;
+
+    if (!isRoomEmpty || !hasSavedCanvas) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadSavedCanvas = async () => {
+      try {
+        const response = await fetch(`/api/projects/${projectId}/canvas`, {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to load saved canvas (${response.status})`);
+        }
+        const data = (await response.json()) as {
+          nodes?: CanvasNode[];
+          edges?: CanvasEdge[];
+          hasSavedCanvas?: boolean;
+        };
+
+        if (
+          isCancelled ||
+          !data.hasSavedCanvas ||
+          nodesRef.current.length > 0 ||
+          edgesRef.current.length > 0
+        ) {
+          return;
+        }
+
+        const savedNodes = Array.isArray(data.nodes) ? data.nodes : [];
+        const savedEdges = Array.isArray(data.edges) ? data.edges : [];
+
+        if (savedNodes.length > 0 || savedEdges.length > 0) {
+          room.batch(() => {
+            if (savedNodes.length > 0) {
+              onNodesChange(
+                savedNodes.map((node) => ({
+                  type: "add",
+                  item: node,
+                }))
+              );
+            }
+            if (savedEdges.length > 0) {
+              onEdgesChange(
+                savedEdges.map((edge) => ({
+                  type: "add",
+                  item: edge,
+                }))
+              );
+            }
+          });
+
+          requestAnimationFrame(() => {
+            void reactFlow.fitView({ padding: 0.15, duration: 250 });
+          });
+        }
+      } catch (error) {
+        console.error("Error loading saved canvas:", error);
+      } finally {
+        if (!isCancelled) {
+          setIsInitialLoadComplete(true);
+        }
+      }
+    };
+
+    void loadSavedCanvas();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    projectId,
+    hasSavedCanvas,
+    isRoomEmpty,
+    room,
+    onNodesChange,
+    onEdgesChange,
+    reactFlow,
+  ]);
+
+  const setSaveStatus = canvasSave?.setSaveStatus;
+  const registerSaveHandler = canvasSave?.registerSaveHandler;
+
+  const { saveNow } = useCanvasAutosave({
+    projectId,
+    nodes,
+    edges,
+    isLoaded: effectiveIsLoaded,
+    onStatusChange: setSaveStatus,
+  });
+
+  React.useEffect(() => {
+    if (!registerSaveHandler) return;
+    return registerSaveHandler(saveNow);
+  }, [registerSaveHandler, saveNow]);
 
   const pendingImport = templateImport?.pendingImport ?? null;
   const clearTemplateImport = templateImport?.clearTemplateImport;
@@ -184,6 +339,26 @@ function CanvasFlowInner() {
     onEdgesChange,
     reactFlow,
   ]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (isEditableTarget(event.target)) return;
+
+      const selectedNodes = flowNodes.filter((node) => node.selected);
+      const selectedEdges = flowEdges.filter((edge) => edge.selected);
+
+      if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
+
+      event.preventDefault();
+      onDelete({ nodes: selectedNodes, edges: selectedEdges });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [flowNodes, flowEdges, onDelete]);
 
   const handleConnect = React.useCallback(
     (connection: Connection) => {
@@ -254,10 +429,17 @@ function CanvasFlowInner() {
       const payload = parseShapeDragPayload(rawPayload);
       if (!payload) return;
 
-      const dropPosition = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      const bounds = canvasWrapperRef.current?.getBoundingClientRect();
+      const viewport = reactFlow.getViewport();
+      const dropPosition = bounds
+        ? {
+            x: (event.clientX - bounds.left - viewport.x) / viewport.zoom,
+            y: (event.clientY - bounds.top - viewport.y) / viewport.zoom,
+          }
+        : screenToFlowPosition({
+            x: event.clientX,
+            y: event.clientY,
+          });
 
       const newNode: CanvasNode = {
         id: generateNodeId(payload.shape),
@@ -281,11 +463,27 @@ function CanvasFlowInner() {
 
       onNodesChange([{ type: "add", item: newNode }]);
     },
-    [onNodesChange, screenToFlowPosition]
+    [onNodesChange, reactFlow, screenToFlowPosition]
   );
+
+  const handleMouseMove = React.useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      updateMyPresence({ cursor: position });
+    },
+    [screenToFlowPosition, updateMyPresence]
+  );
+
+  const handleMouseLeave = React.useCallback(() => {
+    updateMyPresence({ cursor: null });
+  }, [updateMyPresence]);
 
   return (
     <div
+      ref={canvasWrapperRef}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       className="relative h-full w-full bg-base overflow-hidden"
@@ -300,10 +498,12 @@ function CanvasFlowInner() {
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onDelete={onDelete}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        deleteKeyCode={null}
         nodesDraggable
         connectionMode={ConnectionMode.Loose}
         colorMode="dark"
-        fitView
         className="ghost-canvas !bg-base"
       >
         <Background
@@ -313,8 +513,9 @@ function CanvasFlowInner() {
           color="var(--border-subtle)"
           className="!bg-base"
         />
-        <Cursors />
+        <LiveCursors />
       </ReactFlow>
+      <PresenceAvatars />
       <CanvasControls
         onZoomIn={() => void reactFlow.zoomIn({ duration: 200 })}
         onZoomOut={() => void reactFlow.zoomOut({ duration: 200 })}
@@ -354,10 +555,10 @@ function CanvasFlowInner() {
   );
 }
 
-export function CanvasView() {
+export function CanvasView({ projectId, hasSavedCanvas = false }: CanvasViewProps) {
   return (
     <ReactFlowProvider>
-      <CanvasFlowInner />
+      <CanvasFlowInner projectId={projectId} hasSavedCanvas={hasSavedCanvas} />
     </ReactFlowProvider>
   );
 }

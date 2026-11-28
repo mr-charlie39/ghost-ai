@@ -44,10 +44,13 @@ export function ShapePanel({ onShapeDragStart, onShapeDragEnd }: ShapePanelProps
   const handleDragStart = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>, shape: NodeShape) => {
       const size = SHAPE_DEFAULT_SIZES[shape];
+      const rect = event.currentTarget.getBoundingClientRect();
       const payload: ShapeDragPayload = {
         shape,
         width: size.width,
         height: size.height,
+        offsetX: event.clientX - (rect.left + rect.width / 2),
+        offsetY: event.clientY - (rect.top + rect.height / 2),
       };
       const serialized = JSON.stringify(payload);
       event.dataTransfer.setData(SHAPE_DRAG_DATA_KEY, serialized);

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { EditorLayout, AccessDenied } from "@/components/editor";
-import { CanvasWrapper } from "@/components/canvas";
+import { CanvasWrapper, WorkspaceRoomProvider } from "@/components/canvas";
 import { getCurrentIdentity, checkProjectAccess } from "@/lib/project-access";
 import { getUserProjects } from "@/lib/projects";
 import { isLiveblocksConfigured } from "@/lib/liveblocks";
@@ -40,19 +40,25 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   return (
     <Suspense fallback={null}>
-      <EditorLayout
-        activeRoomId={roomId}
-        projectName={access.project.name}
-        isOwner={access.isOwner}
-        showWorkspaceActions
-        initialOwnedProjects={ownedProjects}
-        initialSharedProjects={sharedProjects}
+      <WorkspaceRoomProvider
+        roomId={roomId}
+        isLiveblocksConfigured={liveblocksReady}
       >
-        <CanvasWrapper
-          roomId={roomId}
-          isLiveblocksConfigured={liveblocksReady}
-        />
-      </EditorLayout>
+        <EditorLayout
+          activeRoomId={roomId}
+          projectName={access.project.name}
+          isOwner={access.isOwner}
+          showWorkspaceActions
+          initialOwnedProjects={ownedProjects}
+          initialSharedProjects={sharedProjects}
+        >
+          <CanvasWrapper
+            roomId={roomId}
+            isLiveblocksConfigured={liveblocksReady}
+            hasSavedCanvas={Boolean(access.project.canvasJsonPath)}
+          />
+        </EditorLayout>
+      </WorkspaceRoomProvider>
     </Suspense>
   );
 }

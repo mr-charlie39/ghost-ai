@@ -5,6 +5,8 @@ export * from "./canvas-error-boundary";
 export * from "./canvas-controls";
 export * from "./canvas-edge";
 export * from "./canvas-node";
+export * from "./live-cursors";
 export * from "./node-color-toolbar";
+export * from "./presence-avatars";
 export * from "./shape-panel";
 export * from "./shape-visual";

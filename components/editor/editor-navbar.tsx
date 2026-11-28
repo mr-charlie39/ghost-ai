@@ -14,6 +14,7 @@ export interface EditorNavbarProps {
   leftContent?: React.ReactNode;
   centerContent?: React.ReactNode;
   rightContent?: React.ReactNode;
+  showUserButton?: boolean;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export function EditorNavbar({
   leftContent,
   centerContent,
   rightContent,
+  showUserButton = true,
   className,
 }: EditorNavbarProps) {
   const mounted = React.useSyncExternalStore(
@@ -87,17 +89,19 @@ export function EditorNavbar({
       {/* Right section: Actions & User Button */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {rightContent}
-        <div className="pl-1 sm:pl-2 border-l border-surface-border flex items-center min-w-7 h-7">
-          {mounted && (
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "h-7 w-7 ring-1 ring-surface-border hover:ring-brand/50 transition-all",
-                },
-              }}
-            />
-          )}
-        </div>
+        {showUserButton && (
+          <div className="pl-1 sm:pl-2 border-l border-surface-border flex items-center min-w-7 h-7">
+            {mounted && (
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-7 w-7 ring-1 ring-surface-border hover:ring-brand/50 transition-all",
+                  },
+                }}
+              />
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
